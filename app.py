@@ -21,7 +21,7 @@ def git_update():
 ##############################
 @get("/")
 def _():
-  return "working xd"
+  return "PA AWESOME"
  
 ##############################
 try:
