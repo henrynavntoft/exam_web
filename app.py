@@ -9,7 +9,7 @@
 from bottle import default_app, get, post, run
 import git
  
-@post('/secret_url_for_git_hook')
+@post('/secret')
 def git_update():
   repo = git.Repo('./exam_web')
   origin = repo.remotes.origin
