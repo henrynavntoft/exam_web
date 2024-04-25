@@ -21,7 +21,7 @@ def git_update():
 ##############################
 @get("/")
 def _():
-  return "PA AWESOME asasdasdasdasdasdd"
+  return "Hallo World!"
  
 ##############################
 try:
