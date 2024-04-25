@@ -1,0 +1,2 @@
+gitpython==3.1.27
+bottle==0.12.23
