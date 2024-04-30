@@ -1,7 +1,7 @@
-# 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
+# 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
 
 
-# https://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@github.com/henrynavntoft/exam_web.git
+# https://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@github.com/henrynavntoft/exam_web.git
 
 
 
@@ -21,7 +21,7 @@ def git_update():
 ##############################
 @get("/")
 def _():
-  return "Hallo World!"
+  return " World!"
  
 ##############################
 try:
