@@ -25,7 +25,7 @@ def _():
  
 ##############################
 try:
-  import production #type: ignore
+  import production 
   application = default_app()
 except Exception as ex:
   print("Running local server")
