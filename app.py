@@ -23,7 +23,7 @@ def git_update():
 ##############################
 @get("/")
 def _():
-  return " Hello Tobias!"
+  return " Hello Tobias, hope it works!"
  
 
 
