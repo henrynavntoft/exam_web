@@ -93,7 +93,7 @@ USER_NAME_MAX = 20
 USER_REGEX = "^.{2,20}$"
 def validate_user_first_name():
     error = f"name {USER_NAME_MIN} to {USER_NAME_MAX} characters"
-    user_name = request.forms.get("user_name", "").strip()
+    user_name = request.forms.get("user_first_name", "").strip()
     if not re.match(USER_USERNAME_REGEX, user_name): raise Exception(error, 400)
     return request.forms.name
 
@@ -114,17 +114,38 @@ USER_PASSWORD_MIN = 6
 USER_PASSWORD_MAX = 50
 USER_PASSWORD_REGEX = "^.{6,50}$"
 
+##############################
+
+USER_PASSWORD_MIN = 6
+USER_PASSWORD_MAX = 50
+USER_PASSWORD_REGEX = "^.{6,50}$"
+
 def validate_user_password():
-  error = f"password {USER_PASSWORD_MIN} to {USER_PASSWORD_MAX} characters"
-  error = f"password and confirm_password do not match"
-  user_password = request.forms.get("user_password", "").strip()
-  user_confirm_password = request.forms.get("user_confirm_password", "").strip()
-  if not re.match(USER_PASSWORD_REGEX, user_password): raise Exception(error, 400)
-  if user_password != user_confirm_password: raise Exception(error, 400)
-  return user_confirm_password
+    error = f"password {USER_PASSWORD_MIN} to {USER_PASSWORD_MAX} characters"
+    user_password = request.forms.get("user_password", "").strip()
+    if not re.match(USER_PASSWORD_REGEX, user_password): raise Exception(error, 400)
+    return user_password
 
 ##############################
 
+def validate_user_confirm_password():
+  error = f"password and confirm_password do not match"
+  user_password = request.forms.get("user_password", "").strip()
+  user_confirm_password = request.forms.get("user_confirm_password", "").strip()
+  if user_password != user_confirm_password: raise Exception(error, 400)
+  return user_confirm_password
+
+
+##############################
+CUSTOMER_ROLE = "customer"
+PARTNER_ROLE = "partner"
+
+def validate_user_role():
+    user_role = request.forms.get("user_role", "").strip()
+    error = f"The role ###{user_role}### is neither {CUSTOMER_ROLE} or {PARTNER_ROLE}"
+    if user_role != CUSTOMER_ROLE and user_role != PARTNER_ROLE:
+        raise Exception(error, 400)
+    return user_role
 
 ##############################
 def send_verification_email(from_email, to_email, verification_id):

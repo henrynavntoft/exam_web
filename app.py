@@ -163,38 +163,46 @@ def _():
 @post("/signup")
 def _():
     try:
-        user_pk = uuid.uuid4().hex
+
+        user_email = x.validate_user_email()
+        user_password = x.validate_user_password()
+        user_confirm_password = x.validate_user_confirm_password()
         user_username = x.validate_user_username()
         user_first_name = x.validate_user_first_name()
         user_last_name = x.validate_user_last_name()
-        user_email = x.validate_user_email()
-        user_password = x.validate_user_password() 
+        user_role = x.validate_user_role()
+        user_pk = str(uuid.uuid4())
+        
 
-        # make byte string
-        password = user_password.encode()
-        # Adding the salt to password
+        # # this makes user_password into a byte string
+        password = user_password.encode() 
+    
+        # # Adding the salt to password
         salt = bcrypt.gensalt()
-        # Hashing the password
-        hashed_password = bcrypt.hashpw(password, salt)
-        # printing the salt
+        # # Hashing the password
+        hashed = bcrypt.hashpw(password, salt)
+        # # printing the salt
         print("Salt :")
         print(salt)
-        # printing the hashed
+        
+        # # printing the hashed
         print("Hashed")
-        print(hashed_password)
+        print(hashed)    
+
+
+
 
         db = x.db()
-        q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (user_pk, user_username, user_first_name, user_last_name,  user_email, hashed_password, "Partner", "0", "0", "0", "0"))
+        q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (user_pk, user_username, user_first_name, user_last_name, user_email, hashed, user_role, "0", "0", "0", "0"))
         db.commit()
 
-        x.send_verification_email("henrylnavntoft@gmail.com", user_email, "1231321")
-
-        return "signup" 
+        x.send_verification_email('henrylnavntoft@gmail.com', user_email, user_pk)
+   
+        return "signup"
     except Exception as ex:
         print(ex)
-        return ex
     finally:
-        if "db" in locals(): db.close()  
+        if "db" in locals(): db.close()
 
 ##############################
 

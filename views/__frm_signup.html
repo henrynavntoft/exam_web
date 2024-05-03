@@ -1,14 +1,29 @@
 %import x
 
 
-<h1 class="text-2xl font-bold text-center">Sign Up</h1>
+
 <form id="frm_signup" autocomplete="off" class="flex flex-col gap-2 w-full mx-4 md:w-1/2">
-    <input name="user_user_name" class="w-full border" type="text" placeholder="username" value=""
+    <fieldset>
+        <legend>Choose Your Role:</legend>
+        <div class="flex justify-around">
+            <div>
+                <label for="user_role_customer">Im a customer</label>
+                <input name="user_role" id="user_role_customer" class="w-full border" type="radio" placeholder="Role"
+                    value="customer" checked>
+            </div>
+            <div>
+                <label for="user_role_partner">Im a partner</label>
+                <input name="user_role" id="user_role_partner" class="w-full border" type="radio" placeholder="Role"
+                    value="partner">
+            </div>
+        </div>
+    </fieldset>
+    <input name="user_username" class="w-full border" type="text" placeholder="username" value=""
         mix-check="{{x.USER_USERNAME_REGEX}}">
-    <input name="user_first_name" class="w-full border" type="text" placeholder="firs name" value=""
-        mix-check="{{x.USER_REGEX}}">
+    <input name="user_first_name" class="w-full border" type="text" placeholder="first name" value=""
+        mix-check="{{x.USER_USERNAME_REGEX}}">
     <input name="user_last_name" class="w-full border" type="text" placeholder="last name" value=""
-        mix-check="{{x.USER_REGEX}}">
+        mix-check="{{x.USER_USERNAME_REGEX}}">
     <input name="user_email" class="w-full border" type="text" placeholder="email" value=""
         mix-check="{{x.EMAIL_REGEX}}">
     <input name="user_password" class="w-full border" type="password" placeholder="password" value=""
