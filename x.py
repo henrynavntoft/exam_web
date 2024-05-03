@@ -157,7 +157,7 @@ def send_verification_email(from_email, to_email, verification_id):
         message["Subject"] = 'Testing my email to verify'
 
 
-        email_body= template("views/emailTemplates/email_verify_link", key=verification_id)
+        email_body= template("views/email_verify_link", key=verification_id)
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
