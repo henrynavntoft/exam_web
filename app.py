@@ -54,7 +54,7 @@ def _():
         is_logged = False
         try:    
             x.validate_user_logged()
-            print ("logged")
+            print ("hallo")
             is_logged = True
         except:
             pass
