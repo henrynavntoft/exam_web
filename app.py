@@ -5,7 +5,6 @@
 #########################
 from bottle import default_app, get, post, request, response, run, static_file, template
 import x
-# from icecream import ic
 import bcrypt
 import json
 import credentials
@@ -18,14 +17,6 @@ def git_update():
   repo.create_head('main', origin.refs.main).set_tracking_branch(origin.refs.main).checkout()
   origin.pull()
   return ""
- 
- 
-# ##############################
-# @get("/")
-# def _():
-#   return " Hello Tobias, hope it works!"
- 
-
 
 
 ##############################
@@ -164,27 +155,41 @@ def _():
 ##############################
 @post("/signup")
 def _():
-    # password = b'password'
-    # # Adding the salt to password
-    # salt = bcrypt.gensalt()
-    # # Hashing the password
-    # hashed = bcrypt.hashpw(password, salt)
-    # # printing the salt
-    # print("Salt :")
-    # print(salt)
-    
-    # # printing the hashed
-    # print("Hashed")
-    # print(hashed)    
-    return "signup"
+    try:
+        user_email = x.validate_user_email()
+        user_password = x.validate_user_password()
+
+        # make byte string
+        password = user_password.encode()
+        # Adding the salt to password
+        salt = bcrypt.gensalt()
+        # Hashing the password
+        hashed = bcrypt.hashpw(password, salt)
+        # printing the salt
+        print("Salt :")
+        print(salt)
+        # printing the hashed
+        print("Hashed")
+        print(hashed)
+
+        db = x.db()
+        q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", ("1231321", "HenryNavntoft", "Henry", "Navntoft",  user_email, user_password, "Partner", "0", "0", "0", "0"))
+        db.commit()
+        return "signup" 
+    except Exception as ex:
+        print(ex)
+        return ex
+    finally:
+        if "db" in locals(): db.close()  
+        
 
 
 ##############################
 @post("/login")
 def _():
     try:
-        user_email = x.validate_email()
-        user_password = x.validate_password()
+        user_email = x.validate_user_email()
+        user_password = x.validate_user_password()
         db = x.db()
         q = db.execute("SELECT * FROM users WHERE user_email = ? LIMIT 1", (user_email,))
         user = q.fetchone()

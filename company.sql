@@ -5,7 +5,7 @@ DROP TABLE IF EXISTS users;
 CREATE TABLE users(
     user_pk                 TEXT,
     user_username           TEXT,
-    user_name               TEXT,
+    user_first_name         TEXT,
     user_last_name          TEXT,
     user_email              TEXT UNIQUE,
     user_password           TEXT,
@@ -30,6 +30,8 @@ INSERT INTO users VALUES(
     1,
     0
 );
+
+SELECT * FROM users;
 
 
 DROP TABLE IF EXISTS items;
@@ -58,6 +60,26 @@ INSERT INTO items VALUES
 ("5dbce622fa2b4f22a6f6957d07ff4958", "The National Museum of Denmark", "5dbce622fa2b4f22a6f6957d07ff4958.webp", 55.6772, 12.5784, 5, 2100, 8, 0),
 ("5dbce622fa2b4f22a6f6957d07ff4959", "Church of Our Saviour", "5dbce622fa2b4f22a6f6957d07ff4959.webp", 55.6732, 12.5986, 4.3, 985, 9, 0),
 ("5dbce622fa2b4f22a6f6957d07ff4910", "Round Tower", "5dbce622fa2b4f22a6f6957d07ff4910.webp",  55.6813, 12.5759, 4.8, 1200, 10, 0);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 -- (page_number - 1) * items_per_page
 -- (1 - 1) * 3 = 10 1 2
