@@ -193,7 +193,7 @@ def _():
         user.pop("user_password") # Do not put the user's password in the cookie
         ic(user)
         try:
-            import production
+            import production 
             is_cookie_https = True
         except:
             is_cookie_https = False        
@@ -256,4 +256,5 @@ try:
   application = default_app()
 except Exception as ex:
   print("Running local server")
-  run(host="127.0.0.1", port=80, debug=True, reloader=True)
+  run(host="0.0.0.0", port=80, debug=True, reloader=True)
+
