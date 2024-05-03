@@ -33,6 +33,8 @@ INSERT INTO users VALUES(
 
 SELECT * FROM users;
 
+DELETE FROM users WHERE user_pk = "1231321";
+
 
 DROP TABLE IF EXISTS items;
 

@@ -1,9 +1,12 @@
 import pathlib
 # import sys
 # sys.path.insert(0, str(pathlib.Path(__file__).parent.resolve())+"/bottle")
-from bottle import request, response
+from bottle import request, response, template
 import re
 import sqlite3
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
+import smtplib
 
 ITEMS_PER_PAGE = 2
 COOKIE_SECRET = "41ebeca46f3b-4d77-a8e2-554659075C6319a2fbfb-9a2D-4fb6-Afcad32abb26a5e0"
@@ -129,6 +132,36 @@ def validate_user_password():
 ##############################
 
 
+##############################
+def send_verification_email(from_email, to_email, verification_id):
+    try:
+
+        message = MIMEMultipart()
+        message["To"] = from_email
+        message["From"] = to_email
+        message["Subject"] = 'Testing my email to verify'
+
+
+        email_body= template("views/emailTemplates/email_verify_link", key=verification_id)
+ 
+        messageText = MIMEText(email_body, 'html')
+        message.attach(messageText)
+ 
+        email = from_email
+        password = 'jglkhstighdhpreb'
+ 
+        server = smtplib.SMTP('smtp.gmail.com:587')
+        server.ehlo('Gmail')
+        server.starttls()
+        server.login(email,password)
+        from_email = from_email
+        to_email  = to_email
+        server.sendmail(from_email,to_email,message.as_string())
+ 
+        server.quit()
+    except Exception as ex:
+        print(ex)
+        return "error"
 
 
 

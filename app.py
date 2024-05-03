@@ -1,5 +1,4 @@
-# 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
-# https://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@github.com/henrynavntoft/exam_web.git
+
 
 
 #########################
@@ -153,6 +152,13 @@ def _():
 
 
 ##############################
+@get("/signup")
+def _():
+    x.no_cache()
+    return template("signup.html")
+
+
+##############################
 @post("/signup")
 def _():
     try:
@@ -175,6 +181,9 @@ def _():
         db = x.db()
         q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", ("1231321", "HenryNavntoft", "Henry", "Navntoft",  user_email, user_password, "Partner", "0", "0", "0", "0"))
         db.commit()
+
+        x.send_verification_email("henrylnavntoft@gmail.com", user_email, "123")
+
         return "signup" 
     except Exception as ex:
         print(ex)
