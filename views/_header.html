@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script src='https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.js'></script>
+    <link href='https://api.mapbox.com/mapbox-gl-js/v2.6.1/mapbox-gl.css' rel='stylesheet' />
+
+
+    <link rel="stylesheet" href="/app.css">
+    <script src="/mixhtml.js" defer></script>
+    <script src="/app.js" defer></script>
+    <title>
+        {{ get("title", "Company") }}
+    </title>
+</head>
+<body class="w-full h-screen overflow-x-hidden text-neutral-900 font-light">
+
+    <div id="toast" class="fixed top-4 flex items-center justify-center w-full pointer-events-none z-10"></div>
+
+    
+    <nav class="fixed top-0 left-0 grid grid-cols-[1fr_20fr_5fr] gap-4 w-full h-20 bg-white items-center px-2 lg:px-4">
+
+        <a href="/" class="{{ get('active_home', '') }} 
+            flex items-center h-12 px-4 font-bold text-2xl text-white bg-neutral-800 rounded-md"
+        >
+            bottlesite
+        </a>
+
+        <form>
+            <input type="text" placeholder="Where?">
+        </form>
+
+        <div class="flex gap-4 ml-auto">
+            <a href="/signup" class="{{ get('active_login', '') }}">
+                Your property
+            </a>
+
+            % if get("is_logged", False):
+                <a href="/logout" class="{{ get('active_login', '') }}">
+                    Logout
+                </a>
+            % else:
+                <a href="/login" class="{{ get('active_login', '') }}">
+                    Login
+                </a>
+            % end
+
+
+
+
+
+
+        </div>
+    </nav>

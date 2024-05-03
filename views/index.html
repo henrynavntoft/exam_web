@@ -1,0 +1,38 @@
+%include("_header")
+
+<main class="flex">
+    <div class="w-full h-full">
+        <div class="fixed w-[calc(50%-0.5rem)] h-[calc(100%-5rem)] bg-neutral-100">
+            <div id='map' class="w-full h-full"></div>
+            <script>
+              mapboxgl.accessToken = "{{mapbox_token}}"
+              var map = new mapboxgl.Map({
+                container: 'map',
+                style: 'mapbox://styles/mapbox/streets-v11',
+                center: [12.5683, 55.6761],
+                zoom: 12
+              });
+              var marker1 = new mapboxgl.Marker()
+              .setLngLat([12.5781, 55.6867]) // Marker 1 coordinates
+              .addTo(map);
+            
+            var marker2 = new mapboxgl.Marker()
+              .setLngLat([12.5637, 55.6761]) // Marker 2 coordinates
+              .addTo(map);  
+                          
+            </script>
+        </div>    
+    </div>
+    <div class="w-full pb-16 px-4">
+        <div id="items" class="grid grid-cols-1 lg:grid-cols-2 gap-4 pb-10">
+            % for item in items:
+                %include("_item")
+            % end
+        </div>
+        %include("__btn_more", page_number=2)
+    </div>
+
+</main>
+
+
+%include("_footer")
