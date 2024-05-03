@@ -65,7 +65,7 @@ def validate_user_id():
 EMAIL_MAX = 100
 EMAIL_REGEX = "^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$"
 
-def validate_email():
+def validate_user_email():
     error = f"email invalid"
     user_email = request.forms.get("user_email", "").strip()
     if not re.match(EMAIL_REGEX, user_email): raise Exception(error, 400)
