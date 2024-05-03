@@ -8,6 +8,7 @@ import bcrypt
 import json
 import credentials
 import git
+import uuid
  
 @post('/secret')
 def git_update():
@@ -162,27 +163,31 @@ def _():
 @post("/signup")
 def _():
     try:
+        user_pk = uuid.uuid4().hex
+        user_username = x.validate_user_username()
+        user_first_name = x.validate_user_first_name()
+        user_last_name = x.validate_user_last_name()
         user_email = x.validate_user_email()
-        user_password = x.validate_user_password()
+        user_password = x.validate_user_password() 
 
         # make byte string
         password = user_password.encode()
         # Adding the salt to password
         salt = bcrypt.gensalt()
         # Hashing the password
-        hashed = bcrypt.hashpw(password, salt)
+        hashed_password = bcrypt.hashpw(password, salt)
         # printing the salt
         print("Salt :")
         print(salt)
         # printing the hashed
         print("Hashed")
-        print(hashed)
+        print(hashed_password)
 
         db = x.db()
-        q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", ("1231321", "HenryNavntoft", "Henry", "Navntoft",  user_email, user_password, "Partner", "0", "0", "0", "0"))
+        q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (user_pk, user_username, user_first_name, user_last_name,  user_email, hashed_password, "Partner", "0", "0", "0", "0"))
         db.commit()
 
-        #x.send_verification_email("henrylnavntoft@gmail.com", user_email, "1123132123")
+        x.send_verification_email("henrylnavntoft@gmail.com", user_email, "1231321")
 
         return "signup" 
     except Exception as ex:
@@ -190,7 +195,21 @@ def _():
         return ex
     finally:
         if "db" in locals(): db.close()  
-        
+
+##############################
+
+@get("/activate_user/<id>")
+def _(id):
+    try:
+        db = x.db()
+        q = db.execute("UPDATE users SET user_is_verified = 1 WHERE user_pk = ?", (id,))
+        db.commit()
+        return "User activated"
+    except Exception as ex:
+        print(ex)
+        return ex
+    finally:
+        if "db" in locals(): db.close()         
 
 
 ##############################

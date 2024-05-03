@@ -115,17 +115,11 @@ USER_PASSWORD_MAX = 50
 USER_PASSWORD_REGEX = "^.{6,50}$"
 
 def validate_user_password():
-    error = f"password {USER_PASSWORD_MIN} to {USER_PASSWORD_MAX} characters"
-    user_password = request.forms.get("user_password", "").strip()
-    if not re.match(USER_PASSWORD_REGEX, user_password): raise Exception(error, 400)
-    return user_password
-
-##############################
-
-def validate_user_password():
+  error = f"password {USER_PASSWORD_MIN} to {USER_PASSWORD_MAX} characters"
   error = f"password and confirm_password do not match"
   user_password = request.forms.get("user_password", "").strip()
   user_confirm_password = request.forms.get("user_confirm_password", "").strip()
+  if not re.match(USER_PASSWORD_REGEX, user_password): raise Exception(error, 400)
   if user_password != user_confirm_password: raise Exception(error, 400)
   return user_confirm_password
 
