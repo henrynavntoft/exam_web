@@ -1,6 +1,3 @@
-
-
-
 #########################
 from bottle import default_app, get, post, request, response, run, static_file, template
 import x
