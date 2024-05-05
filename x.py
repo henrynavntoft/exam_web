@@ -88,14 +88,14 @@ def validate_user_username():
 
 ##############################
 
-USER_NAME_MIN = 2
-USER_NAME_MAX = 20
-USER_REGEX = "^.{2,20}$"
+FIRST_NAME_MIN = 2
+FIRST_NAME_MAX = 20
+
 def validate_user_first_name():
-    error = f"name {USER_NAME_MIN} to {USER_NAME_MAX} characters"
-    user_name = request.forms.get("user_first_name", "").strip()
-    if not re.match(USER_USERNAME_REGEX, user_name): raise Exception(error, 400)
-    return request.forms.name
+    error = f"name {FIRST_NAME_MIN} to {FIRST_NAME_MAX} characters"
+    user_first_name = request.forms.get("user_first_name", "").strip()
+    if not re.match(USER_USERNAME_REGEX, user_first_name): raise Exception(error, 400)
+    return user_first_name
 
 ##############################
 
@@ -104,7 +104,7 @@ LAST_NAME_MAX = 20
 
 def validate_user_last_name():
   error = f"last_name {LAST_NAME_MIN} to {LAST_NAME_MAX} characters"
-  user_last_name = request.forms.get("user_last_name").strip()
+  user_last_name = request.forms.get("user_last_name", "").strip()
   if not re.match(USER_USERNAME_REGEX, user_last_name): raise Exception(error, 400)
   return user_last_name
 

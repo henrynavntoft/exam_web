@@ -169,7 +169,7 @@ def _():
         user_first_name = x.validate_user_first_name()
         user_last_name = x.validate_user_last_name()
         user_role = x.validate_user_role()
-        user_pk = str(uuid.uuid4())
+        user_pk = str(uuid.uuid4().hex)
         
 
         # # this makes user_password into a byte string
