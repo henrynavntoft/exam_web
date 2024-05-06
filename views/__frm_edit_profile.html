@@ -1,0 +1,14 @@
+%import x
+
+<form id="frm_edit" class="flex flex-col gap-2 ">
+    <input name="user_username" class="w-full border" type="text" placeholder="username"
+        value="{{user['user_username']}}" mix-check="{{x.USER_USERNAME_REGEX}}">
+    <input name="user_first_name" class="w-full border" type="text" placeholder="first name"
+        value="{{user['user_first_name']}}" mix-check="{{x.USER_USERNAME_REGEX}}">
+    <input name="user_last_name" class="w-full border" type="text" placeholder="last name"
+        value="{{user['user_last_name']}}" mix-check="{{x.USER_USERNAME_REGEX}}">
+    <button class="" mix-data="#frm_edit" mix-put="/edit_profile" mix-default="Save profile edits"
+        mix-await="Please wait ...">
+        Save profile edits
+    </button>
+</form>

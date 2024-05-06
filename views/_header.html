@@ -26,7 +26,7 @@
 
         <a href="/" class="{{ get('active_home', '') }} 
             flex items-center h-12 px-4 font-bold text-2xl text-white bg-neutral-800 rounded-md">
-            bottlesite
+            BottleBnB
         </a>
 
         <form>
@@ -41,6 +41,9 @@
             % if get("is_logged", False):
             <a href="/logout" class="{{ get('active_login', '') }}">
                 Logout
+            </a>
+            <a href="/profile">
+                Profile
             </a>
             % else:
             <a href="/login" class="{{ get('active_login', '') }}">

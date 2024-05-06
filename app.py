@@ -1,5 +1,5 @@
 #########################
-from bottle import default_app, get, post, request, response, run, static_file, template
+from bottle import default_app, get, post, put, request, response, run, static_file, template
 import x
 import bcrypt
 import json
@@ -121,19 +121,112 @@ def _():
 def _():
     try:
         x.no_cache()
-        x.validate_user_logged()
+        user_cookie = request.get_cookie("user", secret=x.COOKIE_SECRET)
+        if not user_cookie:
+            response.status = 303 
+            response.set_header('Location', '/login')
+            return
+        
+        # Deserialize the user info from the cookie
+        user = json.loads(user_cookie)
+
         db = x.db()
         q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
         items = q.fetchall()
-        print(items)    
-        return template("profile.html", is_logged=True, items=items)
+        
+        return template("profile.html", is_logged=True, items=items, user=user)
     except Exception as ex:
-        print(ex)
         response.status = 303 
         response.set_header('Location', '/login')
         return
     finally:
         if "db" in locals(): db.close()
+
+##############################
+@put("/edit_profile")
+def _():
+    try:
+        user_cookie = request.get_cookie("user", secret=x.COOKIE_SECRET)
+        if not user_cookie:
+            response.status = 303 
+            response.set_header('Location', '/login')
+            return
+        
+        # Deserialize the user info from the cookie
+        user = json.loads(user_cookie)
+        
+        # Get the updated user information from the form
+        user_username = request.forms.get("user_username")
+        user_first_name = request.forms.get("user_first_name")
+        user_last_name = request.forms.get("user_last_name")
+        user_updated_at = epoch.time()
+        
+        db = x.db()
+        q = db.execute("UPDATE users SET user_username = ?, user_first_name = ?, user_last_name = ?, user_updated_at = ? WHERE user_pk = ?", (user_username, user_first_name, user_last_name, user_updated_at, user["user_pk"]))
+        db.commit()
+        
+        response.status = 303 
+        response.set_header('Location', '/profile')
+        return
+    except Exception as ex:
+        print(ex)
+        return ex
+    finally:
+        if "db" in locals(): db.close()
+
+
+##############################
+@put("/edit_password")
+def _():
+    try:
+        user_cookie = request.get_cookie("user", secret=x.COOKIE_SECRET)
+        if not user_cookie:
+            response.status = 401
+            return "Unauthorized"
+        
+        # Deserialize the user info from the cookie
+        user = json.loads(user_cookie)
+        
+        # Get the updated password and confirm password from the form
+        user_password = request.forms.get("user_password")
+        user_confirm_password = request.forms.get("user_confirm_password")
+        
+        # Check if the new password and confirm password match
+        if user_password != user_confirm_password:
+            response.status = 400
+            return "New password and confirm password do not match"
+        
+         # this makes user_password into a byte string
+        password = user_password.encode() 
+        
+        # Adding the salt to password
+        salt = bcrypt.gensalt()
+        # Hashing the password
+        hashed = bcrypt.hashpw(password, salt)
+        # printing the salt
+        print("Salt :")
+        print(salt)
+        
+        # printing the hashed
+        print("Hashed")
+        print(hashed)    
+
+        hashed_str = hashed.decode('utf-8')
+        
+        db = x.db()
+        q = db.execute("UPDATE users SET user_password = ? WHERE user_pk = ?", (hashed_str, user["user_pk"]))
+        db.commit()
+        
+        response.status = 200
+        response.set_header('Location', '/login')
+    except Exception as ex:
+        response.status = 500
+        return str(ex)
+    finally:
+        if "db" in locals():
+            db.close()
+
+
 
 
 ##############################
@@ -228,10 +321,10 @@ def _(id):
 def _():
     try:
         user_email = x.validate_user_email()
-        print("Email used for login:", user_email) 
+        
 
         user_password = x.validate_user_password()
-        print("password used for login:", user_password) 
+        
 
         db = x.db()
         q = db.execute("SELECT * FROM users WHERE user_email = ? LIMIT 1", (user_email,))
@@ -241,13 +334,14 @@ def _():
         if not user: raise Exception("user not found", 400)
         if not bcrypt.checkpw(user_password.encode(), user["user_password"].encode()): raise Exception("Invalid credentials", 400)
         user.pop("user_password") # Do not put the user's password in the cookie
+        user_info = json.dumps(user)
         print(user)
         try:
             import production 
             is_cookie_https = True
         except:
             is_cookie_https = False        
-        response.set_cookie("user", user, secret=x.COOKIE_SECRET, httponly=True, secure=is_cookie_https)
+        response.set_cookie("user", user_info, secret=x.COOKIE_SECRET, httponly=True, secure=is_cookie_https)
         
         frm_login = template("__frm_login")
         return f"""
@@ -314,6 +408,9 @@ def _():
         """
     finally:
         if "db" in locals(): db.close()
+
+
+
 
 
 ##############################

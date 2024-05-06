@@ -78,7 +78,7 @@ def validate_user_email():
 
 USER_USERNAME_MIN = 2
 USER_USERNAME_MAX = 20
-USER_USERNAME_REGEX = "^[a-z]{2,20}$"
+USER_USERNAME_REGEX = "^[a-zA-Z]{2,20}$"
 
 def validate_user_username():
     error = f"username {USER_USERNAME_MIN} to {USER_USERNAME_MAX} lowercase english letters"

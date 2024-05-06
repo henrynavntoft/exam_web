@@ -2,11 +2,21 @@
 
 <main id="profile" class="mt-16 p-4">
 
+    <h1>Hello, {{user['user_first_name']}}</h1>
+
     <section class="mb-10">
         <h1 class="text-2xl">Profile</h1>
         <p>
             Welcome to your profile. Here you can see your bookings, your favorite items and your settings.
         </p>
+    </section>
+
+    <section class="mb-10">
+        <h1>Edit profile</h1>
+        <p>
+            Change your email address, password or other settings.
+        </p>
+        %include("__frm_edit_profile")
     </section>
 
     <section class="mb-10">
