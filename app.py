@@ -6,7 +6,8 @@ import json
 import credentials
 import git
 import uuid
- 
+import time as epoch
+
 @post('/secret')
 def git_update():
   repo = git.Repo('./exam_web')
@@ -170,33 +171,37 @@ def _():
         user_last_name = x.validate_user_last_name()
         user_role = x.validate_user_role()
         user_pk = str(uuid.uuid4().hex)
-        
+        user_created_at = epoch.time()
 
-        # # this makes user_password into a byte string
+        # this makes user_password into a byte string
         password = user_password.encode() 
-    
-        # # Adding the salt to password
+        
+        # Adding the salt to password
         salt = bcrypt.gensalt()
-        # # Hashing the password
+        # Hashing the password
         hashed = bcrypt.hashpw(password, salt)
-        # # printing the salt
+        # printing the salt
         print("Salt :")
         print(salt)
         
-        # # printing the hashed
+        # printing the hashed
         print("Hashed")
         print(hashed)    
 
-
+        hashed_str = hashed.decode('utf-8')
 
 
         db = x.db()
-        q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (user_pk, user_username, user_first_name, user_last_name, user_email, hashed, user_role, "0", "0", "0", "0"))
+        q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (user_pk, user_username, user_first_name, user_last_name, user_email, hashed_str, user_role, user_created_at, "0", "0", "0"))
         db.commit()
 
         x.send_verification_email('henrylnavntoft@gmail.com', user_email, user_pk)
    
-        return "signup"
+        return """
+        <template mix-redirect="/login">
+        </template>
+        """
+    
     except Exception as ex:
         print(ex)
     finally:
@@ -223,10 +228,16 @@ def _(id):
 def _():
     try:
         user_email = x.validate_user_email()
+        print("Email used for login:", user_email) 
+
         user_password = x.validate_user_password()
+        print("password used for login:", user_password) 
+
         db = x.db()
         q = db.execute("SELECT * FROM users WHERE user_email = ? LIMIT 1", (user_email,))
         user = q.fetchone()
+        if user["user_is_verified"] != 1:
+            raise Exception("User is not verified", 400)
         if not user: raise Exception("user not found", 400)
         if not bcrypt.checkpw(user_password.encode(), user["user_password"].encode()): raise Exception("Invalid credentials", 400)
         user.pop("user_password") # Do not put the user's password in the cookie
@@ -272,6 +283,56 @@ def _():
         if "db" in locals(): db.close()
 
 
+
+##############################
+@post("/forgot_password")
+def _():
+    try:
+        user_email = x.validate_user_email()
+        db = x.db()
+        q = db.execute("SELECT * FROM users WHERE user_email = ? LIMIT 1", (user_email,))
+        user = q.fetchone()
+        if not user:
+            raise Exception("User not found", 400)
+        user_pk = user["user_pk"]
+        x.send_password_reset_email('henrylnavntoft@gmail.com', user_email, user_pk)
+        return """
+        <template mix-target="#toast">
+            <div mix-ttl="3000" class="success">
+                Password reset email sent successfully
+            </div>
+        </template>
+        """
+    except Exception as ex:
+        response.status = ex.args[1]
+        return f"""
+        <template mix-target="#toast">
+            <div mix-ttl="3000" class="error">
+                {ex.args[0]}
+            </div>
+        </template>
+        """
+    finally:
+        if "db" in locals(): db.close()
+
+
+##############################
+@get("/reset_password/<id>")
+def _(id):
+    try:
+        db = x.db()
+        q = db.execute("SELECT * FROM users WHERE user_pk = ?", (id,))
+        user = q.fetchone()
+        if not user:
+            raise Exception("User not found", 400)
+        return template("reset_password.html", user=user)
+    except Exception as ex:
+        print(ex)
+        return ex
+    finally:
+        if "db" in locals(): db.close()
+
+
 ##############################
 @post("/toogle_item_block")
 def _():
@@ -285,7 +346,7 @@ def _():
     except Exception as ex:
         pass
     finally:
-        if "db" in locals(): db.close()
+        if "db" in locals(): db.close() 
 
 
 

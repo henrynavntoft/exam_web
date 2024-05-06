@@ -25,13 +25,15 @@ INSERT INTO users VALUES(
     "admin@company.com",
     "$2b$12$V/cXqWN/M2vTnYUcXMB9oODcNBX/QorJekmaDkq1Z7aeD3I5ZAjfu",
     "admin",
-    1712674758,
+    1,
     0,
     1,
     0
 );
 
 SELECT * FROM users;
+
+SELECT * FROM users WHERE user_email = "henrylnavntoft@gmail.com" LIMIT 1
 
 
 

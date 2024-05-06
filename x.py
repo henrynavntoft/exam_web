@@ -177,6 +177,32 @@ def send_verification_email(from_email, to_email, verification_id):
     except Exception as ex:
         print(ex)
         return "error"
+    
+
+##############################
+def send_password_reset_email(from_email, to_email, user_pk):
+    try:
+        message = MIMEMultipart()
+        message["To"] = from_email
+        message["From"] = to_email
+        message["Subject"] = 'Password Reset'
+        email_body = template("views/password_reset_email", key=user_pk)
+ 
+        messageText = MIMEText(email_body, 'html')
+        message.attach(messageText)
+ 
+        email = from_email
+        password = 'jglkhstighdhpreb'
+ 
+        server = smtplib.SMTP('smtp.gmail.com:587')
+        server.ehlo('Gmail')
+        server.starttls()
+        server.login(email, password)
+        server.sendmail(from_email, to_email, message.as_string())
+        server.quit()
+    except Exception as ex:
+        print(ex)
+        return "error"
 
 
 
