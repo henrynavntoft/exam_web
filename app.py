@@ -137,6 +137,8 @@ def _():
         if "db" in locals(): db.close()
 
 ##############################
+
+# KIG PÅ COOKIE 
 @put("/edit_profile")
 def _():
     try:
@@ -152,19 +154,16 @@ def _():
         q = db.execute("UPDATE users SET user_username = ?, user_first_name = ?, user_last_name = ?, user_updated_at = ? WHERE user_pk = ?", (user_username, user_first_name, user_last_name, user_updated_at, user["user_pk"]))
         db.commit()
 
-        updated_user = {
-            "user_username": user_username,
-            "user_first_name": user_first_name,
-            "user_last_name": user_last_name,
-            "user_updated_at": user_updated_at
-        }
+        updated_user = {**user, "user_username": user_username, "user_first_name": user_first_name, "user_last_name": user_last_name, "user_updated_at": user_updated_at}
+
 
         try:
+            import production
             is_cookie_https = True
         except:
             is_cookie_https = False
-                    
-        response.set_cookie("user", updated_user, secret=x.COOKIE_SECRET, httponly=True, secure=is_cookie_https)
+
+        response.set_cookie("user", updated_user, secret=x.COOKIE_SECRET, httponly=True, secure=is_cookie_https, path='/')
         
         # Forced redirect after successful update
         response.status = 303 
@@ -183,9 +182,11 @@ def _():
 @put("/edit_password")
 def _():
     try:
-        user = x.validate_user_logged()
+        # Ikke god practice at user_pk, da man vil kunne ændre password på en anden bruger, men det virker
 
         # Get the updated password and confirm password from the form
+        user_pk = request.forms.get("user_pk")
+        print(user_pk)
         user_password = request.forms.get("user_password")
         user_confirm_password = request.forms.get("user_confirm_password")
         user_updated_at = epoch.time()
@@ -214,11 +215,13 @@ def _():
         hashed_str = hashed.decode('utf-8')
         
         db = x.db()
-        q = db.execute("UPDATE users SET user_password = ?, user_updated_at = ? WHERE user_pk = ?", (hashed_str, user_updated_at, user["user_pk"]))
+        q = db.execute("UPDATE users SET user_password = ?, user_updated_at = ? WHERE user_pk = ?", (hashed_str, user_updated_at, user_pk))
         db.commit()
         
-        response.status = 200
-        return template("login.html")
+        response.delete_cookie("user")
+        response.status = 303
+        response.set_header('Location', '/login')
+
     except Exception as ex:
         response.status = 500
         return str(ex)
@@ -429,7 +432,7 @@ def _(id):
         user = q.fetchone()
         if not user:
             raise Exception("User not found", 400)
-        return template("reset_password.html", user=user)
+        return template("reset_password.html", user=user, id=id)
     except Exception as ex:
         print(ex)
         return ex
