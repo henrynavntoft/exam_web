@@ -121,15 +121,9 @@ def _():
 def _():
     try:
         x.no_cache()
-        user_cookie = request.get_cookie("user", secret=x.COOKIE_SECRET)
-        if not user_cookie:
-            response.status = 303 
-            response.set_header('Location', '/login')
-            return
-        
-        # Deserialize the user info from the cookie
-        user = json.loads(user_cookie)
 
+        user = x.validate_user_logged()
+            
         db = x.db()
         q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
         items = q.fetchall()
@@ -146,14 +140,7 @@ def _():
 @put("/edit_profile")
 def _():
     try:
-        user_cookie = request.get_cookie("user", secret=x.COOKIE_SECRET)
-        if not user_cookie:
-            response.status = 303 
-            response.set_header('Location', '/login')
-            return
-        
-        # Deserialize the user info from the cookie
-        user = json.loads(user_cookie)
+        user = x.validate_user_logged()
         
         # Get the updated user information from the form
         user_username = request.forms.get("user_username")
@@ -164,13 +151,30 @@ def _():
         db = x.db()
         q = db.execute("UPDATE users SET user_username = ?, user_first_name = ?, user_last_name = ?, user_updated_at = ? WHERE user_pk = ?", (user_username, user_first_name, user_last_name, user_updated_at, user["user_pk"]))
         db.commit()
+
+        updated_user = {
+            "user_username": user_username,
+            "user_first_name": user_first_name,
+            "user_last_name": user_last_name,
+            "user_updated_at": user_updated_at
+        }
+
+        try:
+            is_cookie_https = True
+        except:
+            is_cookie_https = False
+                    
+        response.set_cookie("user", updated_user, secret=x.COOKIE_SECRET, httponly=True, secure=is_cookie_https)
         
+        # Forced redirect after successful update
         response.status = 303 
         response.set_header('Location', '/profile')
-        return
+        return 
+        
     except Exception as ex:
         print(ex)
-        return ex
+        response.status = 303 
+        response.set_header('Location', '/profile')
     finally:
         if "db" in locals(): db.close()
 
@@ -179,17 +183,13 @@ def _():
 @put("/edit_password")
 def _():
     try:
-        user_cookie = request.get_cookie("user", secret=x.COOKIE_SECRET)
-        if not user_cookie:
-            response.status = 401
-            return "Unauthorized"
-        
-        # Deserialize the user info from the cookie
-        user = json.loads(user_cookie)
-        
+        user = x.validate_user_logged()
+
         # Get the updated password and confirm password from the form
         user_password = request.forms.get("user_password")
         user_confirm_password = request.forms.get("user_confirm_password")
+        user_updated_at = epoch.time()
+
         
         # Check if the new password and confirm password match
         if user_password != user_confirm_password:
@@ -214,11 +214,11 @@ def _():
         hashed_str = hashed.decode('utf-8')
         
         db = x.db()
-        q = db.execute("UPDATE users SET user_password = ? WHERE user_pk = ?", (hashed_str, user["user_pk"]))
+        q = db.execute("UPDATE users SET user_password = ?, user_updated_at = ? WHERE user_pk = ?", (hashed_str, user_updated_at, user["user_pk"]))
         db.commit()
         
         response.status = 200
-        response.set_header('Location', '/login')
+        return template("login.html")
     except Exception as ex:
         response.status = 500
         return str(ex)
@@ -329,19 +329,26 @@ def _():
         db = x.db()
         q = db.execute("SELECT * FROM users WHERE user_email = ? LIMIT 1", (user_email,))
         user = q.fetchone()
+        if not user: raise Exception("user not found", 400)
+
         if user["user_is_verified"] != 1:
             raise Exception("User is not verified", 400)
-        if not user: raise Exception("user not found", 400)
+        if user["user_is_blocked"] != 0:
+            raise Exception("User is not blocked", 400)
+
         if not bcrypt.checkpw(user_password.encode(), user["user_password"].encode()): raise Exception("Invalid credentials", 400)
         user.pop("user_password") # Do not put the user's password in the cookie
-        user_info = json.dumps(user)
+        
+    
+        
         print(user)
+        
         try:
             import production 
             is_cookie_https = True
         except:
             is_cookie_https = False        
-        response.set_cookie("user", user_info, secret=x.COOKIE_SECRET, httponly=True, secure=is_cookie_https)
+        response.set_cookie("user", user, secret=x.COOKIE_SECRET, httponly=True, secure=is_cookie_https)
         
         frm_login = template("__frm_login")
         return f"""
