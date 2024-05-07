@@ -27,6 +27,14 @@
         %include("__frm_forgot_password")
     </section>
 
+    <section class="mb-10">
+        <h1>Delete profile?</h1>
+        <p>
+            Are you sure you want to delete your profile? This action cannot be undone.
+        </p>
+        %include("__frm_delete_profile")
+    </section>
+
     <section id="items" class="grid grid-cols-[1fr_1fr] gap-4">
         % for item in items:
         %include("_item")

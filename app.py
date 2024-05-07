@@ -137,8 +137,6 @@ def _():
         if "db" in locals(): db.close()
 
 ##############################
-
-# KIG PÅ COOKIE 
 @put("/edit_profile")
 def _():
     try:
@@ -166,9 +164,10 @@ def _():
         response.set_cookie("user", updated_user, secret=x.COOKIE_SECRET, httponly=True, secure=is_cookie_https, path='/')
         
         # Forced redirect after successful update
-        response.status = 303 
-        response.set_header('Location', '/profile')
-        return 
+        return """
+        <template mix-redirect="/login">
+        </template>
+        """
         
     except Exception as ex:
         print(ex)
@@ -177,7 +176,7 @@ def _():
     finally:
         if "db" in locals(): db.close()
 
-
+##############################
 ##############################
 @put("/edit_password")
 def _():
@@ -219,14 +218,42 @@ def _():
         db.commit()
         
         response.delete_cookie("user")
-        response.status = 303
-        response.set_header('Location', '/login')
+        return """
+        <template mix-redirect="/login">
+        </template>
+        """
 
     except Exception as ex:
         response.status = 500
         return str(ex)
     finally:
         if "db" in locals():
+            db.close()
+
+
+##############################
+@put("/delete_profile")
+def _():
+    try:
+        user = x.validate_user_logged()
+
+        
+        db = x.db()
+        q = db.execute("UPDATE users SET user_deleted_at = 1 WHERE user_pk = ?", (user["user_pk"],))
+        db.commit()
+        
+        response.delete_cookie("user")
+        return """
+        <template mix-redirect="/login">
+        </template>
+        """
+        
+    except Exception as ex:
+        print(ex)
+        response.status = 303 
+        response.set_header('Location', '/profile')
+    finally:
+        if "db" in locals(): 
             db.close()
 
 
@@ -252,6 +279,12 @@ def _():
 def _():
     x.no_cache()
     return template("signup.html")
+
+##############################
+@get("/change_password")
+def _():
+    x.no_cache()
+    return template("change_password.html")
 
 
 ##############################
@@ -288,7 +321,7 @@ def _():
 
 
         db = x.db()
-        q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (user_pk, user_username, user_first_name, user_last_name, user_email, hashed_str, user_role, user_created_at, "0", "0", "0"))
+        q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_deleted_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (user_pk, user_username, user_first_name, user_last_name, user_email, hashed_str, user_role, user_created_at, "0", "0", "0", "0"))
         db.commit()
 
         x.send_verification_email('henrylnavntoft@gmail.com', user_email, user_pk)
@@ -299,7 +332,25 @@ def _():
         """
     
     except Exception as ex:
-        print(ex)
+        try:
+            response.status = ex.args[1]
+            return f"""
+            <template mix-target="#toast">
+                <div mix-ttl="3000" class="error">
+                    {ex.args[0]}
+                </div>
+            </template>
+            """
+        except Exception as ex:
+            print(ex)
+            response.status = 500
+            return f"""
+            <template mix-target="#toast">
+                <div mix-ttl="3000" class="error">
+                   System under maintainance
+                </div>
+            </template>
+            """
     finally:
         if "db" in locals(): db.close()
 
@@ -337,7 +388,9 @@ def _():
         if user["user_is_verified"] != 1:
             raise Exception("User is not verified", 400)
         if user["user_is_blocked"] != 0:
-            raise Exception("User is not blocked", 400)
+            raise Exception("User is blocked", 400)
+        if user["user_deleted_at"] != 0:
+            raise Exception("User not found", 400)
 
         if not bcrypt.checkpw(user_password.encode(), user["user_password"].encode()): raise Exception("Invalid credentials", 400)
         user.pop("user_password") # Do not put the user's password in the cookie

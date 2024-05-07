@@ -12,6 +12,7 @@ CREATE TABLE users(
     user_role               TEXT,
     user_created_at         INTEGER,
     user_updated_at         INTEGER,
+    user_deleted_at         INTEGER,
     user_is_verified        INTEGER,
     user_is_blocked         INTEGER,
     PRIMARY KEY(user_pk)
@@ -27,6 +28,7 @@ INSERT INTO users VALUES(
     "admin",
     1,
     0,
+    0,
     1,
     0
 );
@@ -34,6 +36,8 @@ INSERT INTO users VALUES(
 SELECT * FROM users;
 
 SELECT * FROM users WHERE user_email = "henrylnavntoft@gmail.com" LIMIT 1
+
+UPDATE users SET user_deleted_at = 0 WHERE user_pk = "88696831b5a94a309a490213170674d4"
 
 
 
