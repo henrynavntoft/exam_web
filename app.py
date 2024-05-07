@@ -362,7 +362,7 @@ def _(id):
         db = x.db()
         q = db.execute("UPDATE users SET user_is_verified = 1 WHERE user_pk = ?", (id,))
         db.commit()
-        return "User activated"
+        return template("activate_user.html")
     except Exception as ex:
         print(ex)
         return ex
