@@ -176,12 +176,11 @@ def _():
     finally:
         if "db" in locals(): db.close()
 
-##############################
+
 ##############################
 @put("/edit_password")
 def _():
     try:
-        # Ikke god practice at user_pk, da man vil kunne ændre password på en anden bruger, men det virker
 
         # Get the updated password and confirm password from the form
         user_pk = request.forms.get("user_pk")
@@ -218,10 +217,16 @@ def _():
         db.commit()
         
         response.delete_cookie("user")
-        return """
-        <template mix-redirect="/login">
-        </template>
-        """
+        return f"""
+
+            <template mix-target="#frm_edit_password" mix-replace>
+            <div>
+                <h1> Your password has been changed </h1>
+                <a class="text-blue-600 underline" href="/login"> Click here to login </a>
+            </div>
+             </template>
+
+            """
 
     except Exception as ex:
         response.status = 500
@@ -241,6 +246,9 @@ def _():
         db = x.db()
         q = db.execute("UPDATE users SET user_deleted_at = 1 WHERE user_pk = ?", (user["user_pk"],))
         db.commit()
+
+        x.send_confirm_delete('henrylnavntoft@gmail.com', user["user_email"], user["user_pk"])
+
         
         response.delete_cookie("user")
         return """

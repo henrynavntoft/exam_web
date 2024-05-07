@@ -203,6 +203,31 @@ def send_password_reset_email(from_email, to_email, user_pk):
     except Exception as ex:
         print(ex)
         return "error"
+    
+##############################
+def send_confirm_delete(from_email, to_email, user_pk):
+    try:
+        message = MIMEMultipart()
+        message["To"] = from_email
+        message["From"] = to_email
+        message["Subject"] = 'Your profile has been deleted'
+        email_body = template("views/deleted_profile_email", key=user_pk)
+ 
+        messageText = MIMEText(email_body, 'html')
+        message.attach(messageText)
+ 
+        email = from_email
+        password = 'jglkhstighdhpreb'
+ 
+        server = smtplib.SMTP('smtp.gmail.com:587')
+        server.ehlo('Gmail')
+        server.starttls()
+        server.login(email, password)
+        server.sendmail(from_email, to_email, message.as_string())
+        server.quit()
+    except Exception as ex:
+        print(ex)
+        return "error"
 
 
 

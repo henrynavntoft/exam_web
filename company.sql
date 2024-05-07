@@ -37,7 +37,7 @@ SELECT * FROM users;
 
 SELECT * FROM users WHERE user_email = "henrylnavntoft@gmail.com" LIMIT 1
 
-UPDATE users SET user_deleted_at = 0 WHERE user_pk = "88696831b5a94a309a490213170674d4"
+UPDATE users SET user_deleted_at = 0 WHERE user_pk = "aa57400551044c3d8c0bd1f794a1468a"
 
 
 
