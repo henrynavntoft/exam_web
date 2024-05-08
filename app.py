@@ -1,3 +1,4 @@
+# IMPORT
 #########################
 from bottle import default_app, get, post, put, request, response, run, static_file, template
 import x
@@ -9,7 +10,8 @@ import uuid
 import time as epoch
 import random
 
-
+# GIT UPDATE
+##############################
 @post('/secret')
 def git_update():
   repo = git.Repo('./exam_web')
@@ -19,6 +21,7 @@ def git_update():
   return ""
 
 
+# STATIC FILES
 ##############################
 @get("/app.css")
 def _():
@@ -32,17 +35,44 @@ def _(file_name):
 
 
 ##############################
-@get("/test")
-def _():
-    return [{"name":"one"}]
-
-
-##############################
 @get("/images/<item_splash_image>")
 def _(item_splash_image):
     return static_file(item_splash_image, "images")
 
 
+
+# ROUTES
+##############################
+@get("/signup")
+def _():
+    x.no_cache()
+    return template("signup.html")
+
+
+##############################
+@get("/login")
+def _():
+    x.no_cache()
+    return template("login.html")
+
+
+##############################
+@get("/logout")
+def _():
+    response.delete_cookie("user")
+    response.status = 303
+    response.set_header('Location', '/login')
+    return
+
+
+##############################
+@get("/change_password")
+def _():
+    x.no_cache()
+    return template("change_password.html")
+
+
+############################## HOME
 ##############################
 @get("/")
 def _():
@@ -72,8 +102,8 @@ def _():
     finally:
         if "db" in locals(): db.close()
 
-
-##############################
+############################## GET ITEMS
+############################## 
 @get("/items/page/<page_number>")
 def _(page_number):
     try:
@@ -88,16 +118,17 @@ def _(page_number):
         print(items)
 
         is_logged = False
+        is_admin = False
         try:
-            x.validate_user_logged()
+            user = x.validate_user_logged()
             is_logged = True
-            
+            is_admin = user['user_role'] == 'admin' 
         except:
             pass
 
         html = ""
         for item in items: 
-            html += template("_item", item=item, is_logged=is_logged)
+            html += template("_item", item=item, is_logged=is_logged, is_admin=is_admin)    
         btn_more = template("__btn_more", page_number=next_page)
         if len(items) < x.ITEMS_PER_PAGE: 
             btn_more = ""
@@ -118,12 +149,23 @@ def _(page_number):
 
 
 ##############################
-@get("/login")
+@post("/toogle_item_block")
 def _():
-    x.no_cache()
-    return template("login.html")
+    try:
+        db = x.db()
+        item_id = request.forms.get("item_id", '')
+        return f"""
+        <template mix-target="[id='{item_id}']" mix-replace>
+            xxxxx
+        </template>
+        """
+    except Exception as ex:
+        pass
+    finally:
+        if "db" in locals(): db.close() 
 
 
+############################## PROFILE
 ##############################
 @get("/profile")
 def _():
@@ -133,6 +175,7 @@ def _():
 
         # Validate if the user is logged in and retrieve user data
         user = x.validate_user_logged()
+        is_admin = False
 
         # Access the database
         db = x.db()
@@ -158,9 +201,9 @@ def _():
             # For other roles, fetch items and show a general profile
             q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
             items = q.fetchall()
-
+            is_admin = user['user_role'] == 'admin'
             # Render a template with item information for other roles
-            return template("profile.html", is_logged=True, items=items, user=user)
+            return template("profile.html", is_logged=True, items=items, user=user, is_admin=is_admin)
     except Exception as ex:
         response.status = 303
         response.set_header('Location', '/login')
@@ -301,40 +344,11 @@ def _():
 
 
 
-
-##############################
-@get("/logout")
-def _():
-    response.delete_cookie("user")
-    response.status = 303
-    response.set_header('Location', '/login')
-    return
-
-
-##############################
-@get("/api")
-def _():
-    return x.test()
-
-
-##############################
-@get("/signup")
-def _():
-    x.no_cache()
-    return template("signup.html")
-
-##############################
-@get("/change_password")
-def _():
-    x.no_cache()
-    return template("change_password.html")
-
-
+############################## SIGNUP
 ##############################
 @post("/signup")
 def _():
     try:
-
         user_email = x.validate_user_email()
         user_password = x.validate_user_password()
         user_confirm_password = x.validate_user_confirm_password()
@@ -398,15 +412,15 @@ def _():
             return f"""
             <template mix-target="#toast">
                 <div mix-ttl="3000" class="error">
-                   System under maintainance
+                System under maintainance
                 </div>
             </template>
             """
     finally:
         if "db" in locals(): db.close()
 
-##############################
 
+##############################
 @get("/activate_user/<id>")
 def _(id):
     try:
@@ -421,6 +435,7 @@ def _(id):
         if "db" in locals(): db.close()         
 
 
+############################## LOGIN
 ##############################
 @post("/login")
 def _():
@@ -547,24 +562,10 @@ def _(id):
         if "db" in locals(): db.close()
 
 
-##############################
-@post("/toogle_item_block")
-def _():
-    try:
-        item_id = request.forms.get("item_id", '')
-        return f"""
-        <template mix-target="[id='{item_id}']" mix-replace>
-            xxxxx
-        </template>
-        """
-    except Exception as ex:
-        pass
-    finally:
-        if "db" in locals(): db.close() 
 
 
-
-############################## NEEEEED VALIDATION
+############################## ITEMS
+############################## TODO: NEEEEEEEEEEEEED VALIDATION
 @post("/add_property")
 def _():
     try:
@@ -624,7 +625,7 @@ def _():
             db.close()
 
 
-
+# RUNNING THE SERVER
 ##############################
 try:
   import production #type: ignore

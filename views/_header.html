@@ -33,10 +33,12 @@
             <input type="text" placeholder="Where?">
         </form>
 
+
         <div class="flex gap-4 ml-auto">
             <a href="/signup" class="{{ get('active_login', '') }}">
                 Signup
             </a>
+
 
             % if get("is_logged", False):
             <a href="/logout" class="{{ get('active_login', '') }}">

@@ -23,12 +23,14 @@
             nat
         </span>
         % if get("is_logged", False):
+        % if get("is_admin", False):
         <form id="{{item['item_pk']}}">
             <input name="item_id" type="text" value="{{item['item_pk']}}">
             <button mix-data="[id='{{item['item_pk']}}']" mix-post="/toogle_item_block">
                 Block
             </button>
         </form>
+        % end
         % end
     </div>
 </div>
