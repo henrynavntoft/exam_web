@@ -1,0 +1,42 @@
+%include("_header")
+
+<main id="profile" class="mt-16 p-4">
+
+    <h1>Hello, {{user['user_first_name']}}</h1>
+
+    <section class="mb-10">
+        <h1 class="text-2xl">Profile</h1>
+        <p>
+            Welcome to your profile. Here you can see your bookings, your favorite items and your settings.
+        </p>
+    </section>
+
+    <section class="mb-10">
+        <h1>Edit profile</h1>
+        <p>
+            Change your email address, password or other settings.
+        </p>
+        %include("__frm_edit_profile")
+    </section>
+
+    <section class="mb-10">
+        <h1>Forgot password?</h1>
+        <p>
+            Enter your email address and we will send you a link to reset your password.
+        </p>
+        %include("__frm_forgot_password")
+    </section>
+
+    <section class="mb-10">
+        <h1>Delete profile?</h1>
+        <p>
+            Are you sure you want to delete your profile? This action cannot be undone.
+        </p>
+        %include("__frm_delete_profile")
+    </section>
+
+
+
+</main>
+
+%include("_footer")

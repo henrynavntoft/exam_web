@@ -49,16 +49,20 @@ def _():
         q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
         items = q.fetchall()
         print(items)
+        
         is_logged = False
+        is_admin = False
+        
         try:    
-            x.validate_user_logged()
-            print ("hallo")
+            user = x.validate_user_logged()
             is_logged = True
+            if user['user_role'] == 'admin':  
+                is_admin = True
         except:
             pass
 
         return template("index.html", items=items, mapbox_token=credentials.mapbox_token, 
-                        is_logged=is_logged)
+                        is_logged=is_logged, is_admin=is_admin) 
     except Exception as ex:
         print(ex)
         return ex
@@ -119,22 +123,36 @@ def _():
 ##############################
 @get("/profile")
 def _():
-    try:
-        x.no_cache()
+        try:
+        # Prevent caching
+            x.no_cache()
 
-        user = x.validate_user_logged()
-            
-        db = x.db()
-        q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
-        items = q.fetchall()
-        
-        return template("profile.html", is_logged=True, items=items, user=user)
-    except Exception as ex:
-        response.status = 303 
-        response.set_header('Location', '/login')
-        return
-    finally:
-        if "db" in locals(): db.close()
+        # Validate if the user is logged in and retrieve user data
+            user = x.validate_user_logged()
+
+        # Access the database
+            db = x.db()
+
+        # Check the user's role and serve the corresponding template
+            if user['user_role'] == 'partner':
+            # Partners get a partner-specific profile without item info
+                return template("profile_partner.html", is_logged=True, user=user)
+            elif user['user_role'] == 'customer':
+            # Customers get a customer-specific profile
+                return template("profile_customer.html", is_logged=True, user=user)
+            else:
+            # For other roles, fetch items and show a general profile
+                q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
+                items = q.fetchall()
+
+            # Render a template with item information for other roles
+            return template("profile.html", is_logged=True, items=items, user=user)
+        except Exception as ex:
+                response.status = 303
+                response.set_header('Location', '/login')
+                return
+        finally:
+                if "db" in locals(): db.close()
 
 ##############################
 @put("/edit_profile")
@@ -152,6 +170,8 @@ def _():
         q = db.execute("UPDATE users SET user_username = ?, user_first_name = ?, user_last_name = ?, user_updated_at = ? WHERE user_pk = ?", (user_username, user_first_name, user_last_name, user_updated_at, user["user_pk"]))
         db.commit()
 
+
+        # Spread the user and update the user information
         updated_user = {**user, "user_username": user_username, "user_first_name": user_first_name, "user_last_name": user_last_name, "user_updated_at": user_updated_at}
 
 
@@ -306,7 +326,9 @@ def _():
         user_username = x.validate_user_username()
         user_first_name = x.validate_user_first_name()
         user_last_name = x.validate_user_last_name()
+
         user_role = x.validate_user_role()
+
         user_pk = str(uuid.uuid4().hex)
         user_created_at = epoch.time()
 
@@ -399,6 +421,9 @@ def _():
             raise Exception("User is blocked", 400)
         if user["user_deleted_at"] != 0:
             raise Exception("User not found", 400)
+        
+        #if user ["user_role"] != "admin": 
+        #   raise Exception("User is not an admin", 400)
 
         if not bcrypt.checkpw(user_password.encode(), user["user_password"].encode()): raise Exception("Invalid credentials", 400)
         user.pop("user_password") # Do not put the user's password in the cookie
