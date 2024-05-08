@@ -10,6 +10,7 @@ import uuid
 import time as epoch
 import random
 
+
 # GIT UPDATE
 ##############################
 @post('/secret')
@@ -21,7 +22,7 @@ def git_update():
   return ""
 
 
-# STATIC FILES
+# SERVING STATIC FILES
 ##############################
 @get("/app.css")
 def _():
@@ -575,8 +576,8 @@ def _():
 
         item_pk = uuid.uuid4().hex
         item_name = x.validate_item_name()
-        item_description = request.forms.get("item_description")
-        item_price_per_night = request.forms.get("item_price_per_night")
+        item_description = x.validate_item_description()
+        item_price_per_night = x.validate_item_price_per_night()
         item_lat = random.uniform(55.615, 55.727)
         item_lon = random.uniform(12.451, 12.650)
         item_stars = round(random.uniform(1, 5), 2)

@@ -39,19 +39,23 @@ def validate_user_logged():
     return user
 
 
-##############################
+############################## TODO: DO WE NEED THIS???
 
-def validate_logged():
+""" def validate_logged():
     # Prevent logged pages from caching
     response.add_header("Cache-Control", "no-cache, no-store, must-revalidate")
     response.add_header("Pragma", "no-cache")
     response.add_header("Expires", "0")  
     user_id = request.get_cookie("id", secret = COOKIE_SECRET_KEY)
     if not user_id: raise Exception("***** user not logged *****", 400)
-    return user_id
+    return user_id """
 
 
-##############################
+########################################################################################### USER VALIDATION
+
+
+
+############################## TODO: WE NEED TO VALIDATE IDS/PKS
 
 USER_ID_LEN = 32
 USER_ID_REGEX = "^[a-f0-9]{32}$"
@@ -148,6 +152,8 @@ def validate_user_role():
     return user_role
 
 
+########################################################################################### ITEMS/PROPERTIES VALIDATION
+
 
 #TODO: finsih validation
 ############################## 
@@ -159,22 +165,35 @@ def validate_item_name():
   error = f"Property name {ITEM_NAME_MIN} to {ITEM_NAME_MAX} characters"
   item_name = request.forms.get("item_name", "").strip()
   if not re.match(ITEM_NAME_REGEX, item_name): raise Exception(error, 400)
+  return item_name
 
 ##############################
 ITEM_PRICE_MIN = 1
-ITEM_PRICE_MAX = 8
-ITEM_PRICE_REGEX = "^\d{1,8}$"
+ITEM_PRICE_MAX = 99999999
+ITEM_PRICE_REGEX = "^\d{1,8}(\.\d{1,2})?$" 
 
+def validate_item_price_per_night():
+  error = f"Price must be between {ITEM_PRICE_MIN} and {ITEM_PRICE_MAX} digits"
+  item_price_per_night = request.forms.get("item_price_per_night", "").strip()
+  if not re.match(ITEM_PRICE_REGEX, item_price_per_night): raise Exception(error, 400)
+  return item_price_per_night
 
 ##############################
 ITEM_DESCRIPTION_MIN = 6
 ITEM_DESCRIPTION_MAX = 200
 ITEM_DESCRIPTION_REGEX = "^.{6,200}$"
 
+def validate_item_description():
+  error = f"Description {ITEM_DESCRIPTION_MIN} to {ITEM_DESCRIPTION_MAX} characters"
+  item_description = request.forms.get("item_description", "").strip()
+  if not re.match(ITEM_DESCRIPTION_REGEX, item_description): raise Exception(error, 400)
+  return item_description
+
 ##############################
 # TODO: validate image upload 
 
 
+########################################################################################### EMAILS
 
 
 ##############################
