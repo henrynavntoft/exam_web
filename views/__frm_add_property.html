@@ -1,0 +1,18 @@
+%import x
+
+
+
+<form id="frm_add_property" autocomplete="off" class="flex flex-col gap-2">
+    <input name="item_name" class="w-full border" type="text" placeholder="Property name" value=""
+        mix-check="{{x.ITEM_NAME_REGEX}}">
+    <input name="item_price_per_night" class="w-full border" type="text" placeholder="Price per night" value=""
+        mix-check="{{x.ITEM_PRICE_REGEX}}">
+    <input name="item_description" class="w-full border" type="text" placeholder="Property description" value=""
+        mix-check="{{x.ITEM_DESCRIPTION_REGEX}}">
+    <input name="item_images" class="w-full border" type="file" multiple="multiple" accept="image/*">
+
+    <button class="" mix-data="#frm_add_property" mix-post="/add_property" mix-default="Add property"
+        mix-await="Please wait ...">
+        Add property
+    </button>
+</form>

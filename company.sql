@@ -35,11 +35,6 @@ INSERT INTO users VALUES(
 
 SELECT * FROM users;
 
-SELECT * FROM users WHERE user_email = "henrylnavntoft@gmail.com" LIMIT 1
-
-UPDATE users SET user_deleted_at = 0 WHERE user_pk = "aa57400551044c3d8c0bd1f794a1468a"
-
-
 
 
 DROP TABLE IF EXISTS items;
@@ -47,6 +42,7 @@ DROP TABLE IF EXISTS items;
 CREATE TABLE items(
     item_pk                 TEXT,
     item_name               TEXT,
+    item_description        TEXT,
     item_splash_image       TEXT,
     item_lat                TEXT,
     item_lon                TEXT,
@@ -54,20 +50,81 @@ CREATE TABLE items(
     item_price_per_night    REAL,
     item_created_at         INTEGER,
     item_updated_at         INTEGER,
+    item_deleted_at         INTEGER,
+    item_is_blocked         INTEGER,
     PRIMARY KEY(item_pk)
 ) WITHOUT ROWID;
 
 INSERT INTO items VALUES
-("5dbce622fa2b4f22a6f6957d07ff4951", "Christiansborg Palace", "5dbce622fa2b4f22a6f6957d07ff4951.webp", 55.6761, 12.5770, 5, 2541, 1, 0),
-("5dbce622fa2b4f22a6f6957d07ff4952", "Tivoli Gardens", "5dbce622fa2b4f22a6f6957d07ff4952.webp", 55.6736, 12.5681, 4.97, 985, 2, 0),
-("5dbce622fa2b4f22a6f6957d07ff4953", "Nyhavn", "5dbce622fa2b4f22a6f6957d07ff4953.webp", 55.6794, 12.5918, 3.45, 429, 3, 0),
-("5dbce622fa2b4f22a6f6957d07ff4954", "The Little Mermaid statue", "5dbce622fa2b4f22a6f6957d07ff4954.webp", 55.6929, 12.5998, 4, 862, 4, 0),
-("5dbce622fa2b4f22a6f6957d07ff4955", "Amalienborg Palace", "5dbce622fa2b4f22a6f6957d07ff4955.webp", 55.6846, 12.5949, 2.67, 1200, 5, 0),
-("5dbce622fa2b4f22a6f6957d07ff4956", "Copenhagen Opera House", "5dbce622fa2b4f22a6f6957d07ff4956.webp",  55.6796, 12.6021, 4.57, 1965, 6, 0),
-("5dbce622fa2b4f22a6f6957d07ff4957", "Rosenborg Castle", "5dbce622fa2b4f22a6f6957d07ff4957.webp", 55.6867, 12.5734, 4, 1700, 7, 0),
-("5dbce622fa2b4f22a6f6957d07ff4958", "The National Museum of Denmark", "5dbce622fa2b4f22a6f6957d07ff4958.webp", 55.6772, 12.5784, 5, 2100, 8, 0),
-("5dbce622fa2b4f22a6f6957d07ff4959", "Church of Our Saviour", "5dbce622fa2b4f22a6f6957d07ff4959.webp", 55.6732, 12.5986, 4.3, 985, 9, 0),
-("5dbce622fa2b4f22a6f6957d07ff4910", "Round Tower", "5dbce622fa2b4f22a6f6957d07ff4910.webp",  55.6813, 12.5759, 4.8, 1200, 10, 0);
+("5dbce622fa2b4f22a6f6957d07ff4951", "Christiansborg Palace", "", "5dbce622fa2b4f22a6f6957d07ff4951.webp", 55.6761, 12.5770, 5, 2541, 1, 0, 0, 0),
+("5dbce622fa2b4f22a6f6957d07ff4952", "Tivoli Gardens", "", "5dbce622fa2b4f22a6f6957d07ff4952.webp", 55.6736, 12.5681, 4.97, 985, 2, 0, 0, 0),
+("5dbce622fa2b4f22a6f6957d07ff4953", "Nyhavn", "", "5dbce622fa2b4f22a6f6957d07ff4953.webp", 55.6794, 12.5918, 3.45, 429, 3, 0, 0, 0),
+("5dbce622fa2b4f22a6f6957d07ff4954", "The Little Mermaid statue", "", "5dbce622fa2b4f22a6f6957d07ff4954.webp", 55.6929, 12.5998, 4, 862, 4, 0, 0, 0),
+("5dbce622fa2b4f22a6f6957d07ff4955", "Amalienborg Palace", "", "5dbce622fa2b4f22a6f6957d07ff4955.webp", 55.6846, 12.5949, 2.67, 1200, 5, 0, 0, 0),
+("5dbce622fa2b4f22a6f6957d07ff4956", "Copenhagen Opera House", "", "5dbce622fa2b4f22a6f6957d07ff4956.webp",  55.6796, 12.6021, 4.57, 1965, 6, 0, 0, 0),
+("5dbce622fa2b4f22a6f6957d07ff4957", "Rosenborg Castle", "", "5dbce622fa2b4f22a6f6957d07ff4957.webp", 55.6867, 12.5734, 4, 1700, 7, 0, 0, 0),
+("5dbce622fa2b4f22a6f6957d07ff4958", "The National Museum of Denmark", "", "5dbce622fa2b4f22a6f6957d07ff4958.webp", 55.6772, 12.5784, 5, 2100, 8, 0, 0, 0),
+("5dbce622fa2b4f22a6f6957d07ff4959", "Church of Our Saviour", "", "5dbce622fa2b4f22a6f6957d07ff4959.webp", 55.6732, 12.5986, 4.3, 985, 9, 0, 0, 0),
+("5dbce622fa2b4f22a6f6957d07ff4910", "Round Tower", "", "5dbce622fa2b4f22a6f6957d07ff4910.webp",  55.6813, 12.5759, 4.8, 1200, 10, 0, 0, 0);
+
+SELECT * FROM items;
+
+
+
+DROP TABLE IF EXISTS users_items;
+
+CREATE TABLE users_items(
+    user_fk                 TEXT,
+    item_fk                 TEXT,
+    user_item_created_at    INTEGER,
+    user_item_updated_at    INTEGER,
+    user_item_deleted_at    INTEGER,
+    user_item_is_blocked    INTEGER,
+    FOREIGN KEY(user_fk) REFERENCES users(user_pk),
+    FOREIGN KEY(item_fk) REFERENCES items(item_pk),
+    PRIMARY KEY(user_fk, item_fk)
+) WITHOUT ROWID;
+
+
+SELECT * FROM users_items;
+
+DROP TABLE IF EXISTS item_images;
+
+
+CREATE TABLE item_images (
+    item_fk           TEXT,
+    image_url         TEXT,
+    FOREIGN KEY(item_fk) REFERENCES items(item_pk)
+    PRIMARY KEY (item_fk, image_url)
+) WITHOUT ROWID;
+
+
+SELECT * FROM item_images;
+
+
+
+SELECT * FROM users WHERE user_email = "henrylnavntoft@gmail.com" LIMIT 1
+
+UPDATE users SET user_deleted_at = 0 WHERE user_pk = "aa57400551044c3d8c0bd1f794a1468a"
+
+
+
+
+INSERT INTO item_images (item_fk, image_url) VALUES
+("5dbce622fa2b4f22a6f6957d07ff4951", "5dbce622fa2b4f22a6f6957d07ff4951_image1.webp"),
+("5dbce622fa2b4f22a6f6957d07ff4951", "5dbce622fa2b4f22a6f6957d07ff4951_image2.webp"),
+("5dbce622fa2b4f22a6f6957d07ff4951", "5dbce622fa2b4f22a6f6957d07ff4951_image3.webp");
+
+
+
+
+
+
+
+SELECT items.item_pk, items.item_name, item_images.image_url
+FROM items
+JOIN item_images ON items.item_pk = item_images.item_fk
+WHERE items.item_pk = "57dad0858a6648d58d764efa072751dd";
 
 
 

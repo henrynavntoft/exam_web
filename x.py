@@ -147,6 +147,36 @@ def validate_user_role():
         raise Exception(error, 400)
     return user_role
 
+
+
+#TODO: finsih validation
+############################## 
+ITEM_NAME_MIN = 6
+ITEM_NAME_MAX = 50
+ITEM_NAME_REGEX = "^.{6,50}$"
+
+def validate_item_name():
+  error = f"Property name {ITEM_NAME_MIN} to {ITEM_NAME_MAX} characters"
+  item_name = request.forms.get("item_name", "").strip()
+  if not re.match(ITEM_NAME_REGEX, item_name): raise Exception(error, 400)
+
+##############################
+ITEM_PRICE_MIN = 1
+ITEM_PRICE_MAX = 8
+ITEM_PRICE_REGEX = "^\d{1,8}$"
+
+
+##############################
+ITEM_DESCRIPTION_MIN = 6
+ITEM_DESCRIPTION_MAX = 200
+ITEM_DESCRIPTION_REGEX = "^.{6,200}$"
+
+##############################
+# TODO: validate image upload 
+
+
+
+
 ##############################
 def send_verification_email(from_email, to_email, verification_id):
     try:

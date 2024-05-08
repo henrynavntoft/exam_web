@@ -35,6 +35,29 @@
         %include("__frm_delete_profile")
     </section>
 
+    <section class="mb-10">
+        <h1>Add a property</h1>
+        <p> Add any property of your desire</p>
+        %include("__frm_add_property")
+    </section>
+
+
+
+    <section>
+        <h1>Your properties</h1>
+        <p>Here is a list of all your properties</p>
+        %include("_user_properties")
+    </section>
+
+    <section id="items" class="grid grid-cols-[1fr_1fr] gap-4">
+        % for item in items:
+        %include("_item")
+        % end
+    </section>
+
+
+
+
 </main>
 
 %include("_footer")

@@ -7,6 +7,8 @@ import credentials
 import git
 import uuid
 import time as epoch
+import random
+
 
 @post('/secret')
 def git_update():
@@ -50,6 +52,7 @@ def _():
         items = q.fetchall()
         print(items)
         
+        # vi skal kigge på dette, og finde ud af hvordan vi viser / for forskellige users
         is_logged = False
         is_admin = False
         
@@ -88,6 +91,7 @@ def _(page_number):
         try:
             x.validate_user_logged()
             is_logged = True
+            
         except:
             pass
 
@@ -123,36 +127,47 @@ def _():
 ##############################
 @get("/profile")
 def _():
-        try:
+    try:
         # Prevent caching
-            x.no_cache()
+        x.no_cache()
 
         # Validate if the user is logged in and retrieve user data
-            user = x.validate_user_logged()
+        user = x.validate_user_logged()
 
         # Access the database
-            db = x.db()
+        db = x.db()
 
         # Check the user's role and serve the corresponding template
-            if user['user_role'] == 'partner':
-            # Partners get a partner-specific profile without item info
-                return template("profile_partner.html", is_logged=True, user=user)
-            elif user['user_role'] == 'customer':
+        if user['user_role'] == 'partner':
+            # Partners get a partner-specific profile with their items
+            query = """
+            SELECT i.* 
+            FROM items i 
+            JOIN users_items ui ON i.item_pk = ui.item_fk 
+            WHERE ui.user_fk = ? 
+            ORDER BY i.item_created_at 
+            LIMIT 0, ?
+            """
+            q = db.execute(query, (user['user_pk'], x.ITEMS_PER_PAGE,))
+            items = q.fetchall()
+            return template("profile_partner.html", is_logged=True, user=user, items=items)
+        elif user['user_role'] == 'customer':
             # Customers get a customer-specific profile
-                return template("profile_customer.html", is_logged=True, user=user)
-            else:
+            return template("profile_customer.html", is_logged=True, user=user)
+        else:
             # For other roles, fetch items and show a general profile
-                q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
-                items = q.fetchall()
+            q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
+            items = q.fetchall()
 
             # Render a template with item information for other roles
             return template("profile.html", is_logged=True, items=items, user=user)
-        except Exception as ex:
-                response.status = 303
-                response.set_header('Location', '/login')
-                return
-        finally:
-                if "db" in locals(): db.close()
+    except Exception as ex:
+        response.status = 303
+        response.set_header('Location', '/login')
+        return
+    finally:
+        if "db" in locals():
+            db.close()
 
 ##############################
 @put("/edit_profile")
@@ -185,7 +200,7 @@ def _():
         
         # Forced redirect after successful update
         return """
-        <template mix-redirect="/login">
+        <template mix-redirect="/profile">
         </template>
         """
         
@@ -331,6 +346,12 @@ def _():
 
         user_pk = str(uuid.uuid4().hex)
         user_created_at = epoch.time()
+
+
+        if user_password != user_confirm_password:
+            response.status = 400
+            return "New password and confirm password do not match"
+        
 
         # this makes user_password into a byte string
         password = user_password.encode() 
@@ -543,9 +564,70 @@ def _():
 
 
 
+############################## NEEEEED VALIDATION
+@post("/add_property")
+def _():
+    try:
+
+        user = x.validate_user_logged()
+        user_pk = user['user_pk']
+
+        item_pk = uuid.uuid4().hex
+        item_name = x.validate_item_name()
+        item_description = request.forms.get("item_description")
+        item_price_per_night = request.forms.get("item_price_per_night")
+        item_lat = random.uniform(55.615, 55.727)
+        item_lon = random.uniform(12.451, 12.650)
+        item_stars = round(random.uniform(1, 5), 2)
+        item_created_at = epoch.time()
+        item_updated_at = 0
+        item_deleted_at = 0
+        item_is_blocked = 0
+
+        item_images = request.files.getall("item_images")
+        if not item_images:
+            response.status = 400
+            return "No images provided"
+
+        # Initialize the first image URL for the splash image
+        first_image_filename = f"{item_pk}_1.{item_images[0].filename.split('.')[-1]}"
+
+        # Insert the property into the items table
+        db = x.db()
+        db.execute("INSERT INTO items (item_pk, item_name, item_description, item_splash_image, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (item_pk, item_name, item_description, first_image_filename, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked))
+        db.commit()
+
+        db.execute("INSERT INTO users_items (user_fk, item_fk) VALUES (?, ?)",
+                (user_pk, item_pk))
+        db.commit()
+
+
+        # Process each image, rename it, save it, and store just the filename in the database
+        for index, image in enumerate(item_images, start=1):
+            filename = f"{item_pk}_{index}.{image.filename.split('.')[-1]}"
+            path = f"images/{filename}"
+            image.save(path)  # Save the image with the new filename
+
+            # Insert the image filename into the item_images table (without path)
+            db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
+            db.commit()
+
+        return "Property added successfully"
+
+    except Exception as ex:
+        response.status = 500
+        return str(ex)
+
+    finally:
+        if "db" in locals():
+            db.close()
+
+
+
 ##############################
 try:
-  import production 
+  import production #type: ignore
   application = default_app()
 except Exception as ex:
   print("Running local server")
