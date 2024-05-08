@@ -22,14 +22,22 @@
         <span>
             Nat
         </span>
+
         % if get("is_logged", False) and get("is_admin", False):
-        <form id="{{item['item_pk']}}">
-            <input name="item_id" type="text" value="{{item['item_pk']}}">
-            <button mix-data="[id='{{item['item_pk']}}']" mix-post="/toogle_item_block">
-                Block
-            </button>
-        </form>
-        % end
+        <section class="flex gap-2">
+            <form id="{{item['item_pk']}}">
+                <input name="item_id" hidden type="text" value="{{item['item_pk']}}">
+                <button mix-data="[id='{{item['item_pk']}}']" mix-post="/toogle_item_block">
+                    Block
+                </button>
+            </form>
+            <form id="{{item['item_pk']}}_1">
+                <input name="item_pk" type="text" hidden value="{{item['item_pk']}}">
+                <button mix-data="[id='{{item['item_pk']}}_1']" mix-post="/delete_item">
+                    Delete
+                </button>
+            </form>
+        </section>
         % end
     </div>
 </div>

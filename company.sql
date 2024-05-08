@@ -70,6 +70,9 @@ INSERT INTO items VALUES
 SELECT * FROM items;
 
 
+DELETE FROM items WHERE item_pk = "5dbce622fa2b4f22a6f6957d07ff4910";
+
+
 
 DROP TABLE IF EXISTS users_items;
 

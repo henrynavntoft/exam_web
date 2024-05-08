@@ -1,6 +1,6 @@
 # IMPORT
 #########################
-from bottle import default_app, get, post, put, request, response, run, static_file, template
+from bottle import default_app, get, post, put, delete, request, response, run, static_file, template
 import x
 import bcrypt
 import json
@@ -97,6 +97,7 @@ def _():
 
         return template("index.html", items=items, mapbox_token=credentials.mapbox_token, 
                         is_logged=is_logged, is_admin=is_admin) 
+    
     except Exception as ex:
         print(ex)
         return ex
@@ -624,6 +625,28 @@ def _():
     finally:
         if "db" in locals():
             db.close()
+
+############################## TODO: SHOULD THIS BE DELETE??
+@post("/delete_item") 
+def _():
+    try:
+
+        item_pk = request.forms.get("item_pk")
+        print(item_pk)
+
+        db = x.db()
+        db.execute("DELETE FROM items WHERE item_pk = ?", (item_pk,))
+        db.commit()
+        return """
+        <template mix-redirect="/">
+        </template>
+        """
+    except Exception as ex:
+        response.status = ex.args[1]
+        return ex.args[0]
+    finally:
+        if "db" in locals(): db.close()
+
 
 
 # RUNNING THE SERVER
