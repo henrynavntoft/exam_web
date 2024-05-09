@@ -184,6 +184,7 @@ def _():
 
         # Check the user's role and serve the corresponding template
         if user['user_role'] == 'partner':
+            is_partner = True
             # Partners get a partner-specific profile with their items
             query = """
             SELECT i.* 
@@ -195,7 +196,7 @@ def _():
             """
             q = db.execute(query, (user['user_pk'], x.ITEMS_PER_PAGE,))
             items = q.fetchall()
-            return template("profile_partner.html", is_logged=True, user=user, items=items)
+            return template("profile_partner.html", is_logged=True, user=user, items=items, is_partner=is_partner)
         elif user['user_role'] == 'customer':
             # Customers get a customer-specific profile
             return template("profile_customer.html", is_logged=True, user=user)
@@ -638,7 +639,7 @@ def _():
         db.execute("DELETE FROM items WHERE item_pk = ?", (item_pk,))
         db.commit()
         return """
-        <template mix-redirect="/">
+        <template mix-redirect="/profile">
         </template>
         """
     except Exception as ex:

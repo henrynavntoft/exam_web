@@ -1,3 +1,5 @@
+% import x
+
 <div class="item">
     <img alt="" src="/images/{{item['item_splash_image']}}" class="w-full h-48 aspect-square object-cover rounded-lg">
     <div class="flex justify-between mt-2">
@@ -23,6 +25,12 @@
             Nat
         </span>
 
+
+        <!--Why is it saying "," expected -->
+
+
+
+
         % if get("is_logged", False) and get("is_admin", False):
         <section class="flex gap-2">
             <form id="{{item['item_pk']}}">
@@ -37,6 +45,38 @@
                     Delete
                 </button>
             </form>
+        </section>
+        % end
+        % if get("is_logged", False) and get("is_partner", False):
+        <section class="flex gap-2">
+            <form id="{{item['item_pk']}}_1">
+                <input name="item_pk" type="text" hidden value="{{item['item_pk']}}">
+                <button mix-data="[id='{{item['item_pk']}}_1']" mix-post="/delete_item">
+                    Delete
+                </button>
+            </form>
+            <button class="mb-2" onclick="document.getElementById('dialog-{{item['item_pk']}}').showModal()">
+                Edit details
+            </button>
+            <dialog id="dialog-{{item['item_pk']}}" class="rounded-lg p-4 w-[500px]">
+                <h3 class="text-lg font-bold">Edit {{item["item_name"]}}</h3>
+                <form id="{{item['item_pk']}}_2" class="flex flex-col gap-2">
+                    <input name="item_pk" type="text" hidden value="{{item['item_pk']}}">
+                    <input name="item_name" class="w-full border" type="text" placeholder="Property name"
+                        value="{{item['item_name']}}" mix-check="{{x.ITEM_NAME_REGEX}}">
+                    <input name="item_price_per_night" class="w-full border" type="text" placeholder="Price per night"
+                        value="{{item['item_price_per_night']}}" mix-check="{{x.ITEM_PRICE_REGEX}}">
+                    <input name="item_description" class="w-full border" type="text" placeholder="Property description"
+                        value="{{item['item_description']}}" mix-check="{{x.ITEM_DESCRIPTION_REGEX}}">
+                    <input value="" name="item_images" class="w-full border" type="file" multiple="multiple"
+                        accept="image/*" mix-check="">
+                    <button mix-data="[id='{{item['item_pk']}}_2']" mix-post="/edit_item">
+                        Edit
+                    </button>
+                </form>
+                <button class="mt-2"
+                    onclick="document.getElementById('dialog-{{item['item_pk']}}').close()">Close</button>
+            </dialog>
         </section>
         % end
     </div>

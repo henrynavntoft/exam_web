@@ -1,4 +1,6 @@
 -- Hashed passsword is: $2b$12$V/cXqWN/M2vTnYUcXMB9oODcNBX/QorJekmaDkq1Z7aeD3I5ZAjfu
+-- Password for admin is: password
+------------------------------------------------------------
 
 DROP TABLE IF EXISTS users;
 
@@ -20,9 +22,9 @@ CREATE TABLE users(
 
 INSERT INTO users VALUES(
     "d11854217ecc42b2bb17367fe33dc8f4",
-    "johndoe",
-    "John",
-    "Doe",
+    "admin",
+    "Admin",
+    "Company",
     "admin@company.com",
     "$2b$12$V/cXqWN/M2vTnYUcXMB9oODcNBX/QorJekmaDkq1Z7aeD3I5ZAjfu",
     "admin",
@@ -35,7 +37,7 @@ INSERT INTO users VALUES(
 
 SELECT * FROM users;
 
-
+------------------------------------------------------------
 
 DROP TABLE IF EXISTS items;
 
@@ -70,9 +72,7 @@ INSERT INTO items VALUES
 SELECT * FROM items;
 
 
-DELETE FROM items WHERE item_pk = "5dbce622fa2b4f22a6f6957d07ff4910";
-
-
+------------------------------------------------------------
 
 DROP TABLE IF EXISTS users_items;
 
@@ -88,11 +88,12 @@ CREATE TABLE users_items(
     PRIMARY KEY(user_fk, item_fk)
 ) WITHOUT ROWID;
 
-
 SELECT * FROM users_items;
 
-DROP TABLE IF EXISTS item_images;
 
+------------------------------------------------------------
+
+DROP TABLE IF EXISTS item_images;
 
 CREATE TABLE item_images (
     item_fk           TEXT,
@@ -101,8 +102,18 @@ CREATE TABLE item_images (
     PRIMARY KEY (item_fk, image_url)
 ) WITHOUT ROWID;
 
-
 SELECT * FROM item_images;
+
+
+
+------------------------------------------------------------
+
+
+
+
+DELETE FROM items WHERE item_pk = "5dbce622fa2b4f22a6f6957d07ff4910";
+
+
 
 
 

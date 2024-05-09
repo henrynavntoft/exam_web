@@ -22,7 +22,8 @@
     <div id="toast" class="fixed top-4 flex items-center justify-center w-full pointer-events-none z-10"></div>
 
 
-    <nav class="fixed top-0 left-0 grid grid-cols-[1fr_20fr_5fr] gap-4 w-full h-20 bg-white items-center px-2 lg:px-4">
+    <nav
+        class="fixed top-0 left-0 grid grid-cols-[1fr_20fr_5fr] gap-4 w-full h-20 bg-white items-center px-2 lg:px-4 z-1000">
 
         <a href="/" class="{{ get('active_home', '') }} 
             flex items-center h-12 px-4 font-bold text-2xl text-white bg-neutral-800 rounded-md">
@@ -33,30 +34,22 @@
             <input type="text" placeholder="Where?">
         </form>
 
-
-        <div class="flex gap-4 ml-auto">
-            <a href="/signup" class="{{ get('active_login', '') }}">
-                Signup
-            </a>
-
-
+        <div class="flex gap-4 ml-auto justify-center items-center">
             % if get("is_logged", False):
             <a href="/logout" class="{{ get('active_login', '') }}">
                 Logout
             </a>
-            <a href="/profile">
+            <a href="/profile" class="{{ get('active_login', '') }}">
                 Profile
             </a>
             % else:
             <a href="/login" class="{{ get('active_login', '') }}">
                 Login
             </a>
+            <a href="/signup" class="bg-black text-white p-2 rounded-lg {{ get('active_login', '') }}">
+                Signup
+            </a>
             % end
-
-
-
-
-
-
         </div>
+
     </nav>

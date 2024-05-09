@@ -9,7 +9,7 @@
         mix-check="{{x.ITEM_PRICE_REGEX}}">
     <input name="item_description" class="w-full border" type="text" placeholder="Property description" value=""
         mix-check="{{x.ITEM_DESCRIPTION_REGEX}}">
-    <input name="item_images" class="w-full border" type="file" multiple="multiple" accept="image/*">
+    <input name="item_images" class="w-full border" type="file" multiple="multiple" accept="image/*" mix-check="">
 
     <button class="" mix-data="#frm_add_property" mix-post="/add_property" mix-default="Add property"
         mix-await="Please wait ...">
