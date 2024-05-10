@@ -9,6 +9,8 @@ import git
 import uuid
 import time as epoch
 import random
+import os
+
 
 
 # GIT UPDATE
@@ -568,7 +570,7 @@ def _(id):
 
 
 ############################## ITEMS
-############################## TODO: NEEEEEEEEEEEEED VALIDATION
+############################## TODO: check this out, how the images are processed and validated
 @post("/add_property")
 def _():
     try:
@@ -617,17 +619,19 @@ def _():
             db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
             db.commit()
 
-        return "Property added successfully"
+        return """
+        <template mix-redirect="/profile">
+        </template>
+        """
 
     except Exception as ex:
         response.status = 500
         return str(ex)
 
     finally:
-        if "db" in locals():
-            db.close()
+        if "db" in locals(): db.close()
 
-############################## TODO: SHOULD THIS BE DELETE??
+############################## TODO: THIS NEEDS TO DELETE ASSOSIATED IMAGES??
 @post("/delete_item") 
 def _():
     try:
@@ -636,6 +640,18 @@ def _():
         print(item_pk)
 
         db = x.db()
+
+        images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (item_pk,)).fetchall()
+
+        for image in images:
+            file_path = os.path.join('images', image['image_url'])  
+            if os.path.exists(file_path):
+                os.remove(file_path)
+        
+        db.execute("DELETE FROM item_images WHERE item_fk = ?", (item_pk,))
+        db.commit()
+
+
         db.execute("DELETE FROM items WHERE item_pk = ?", (item_pk,))
         db.commit()
         return """

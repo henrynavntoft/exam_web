@@ -189,8 +189,29 @@ def validate_item_description():
   if not re.match(ITEM_DESCRIPTION_REGEX, item_description): raise Exception(error, 400)
   return item_description
 
-##############################
-# TODO: validate image upload 
+############################## TODO: Fix this, we need to validate the image size and number of images
+ITEM_IMAGES_MIN = 1
+ITEM_IMAGES_MAX = 5
+MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB in bytes
+
+
+def validate_item_images():
+    error_num = f"Number of images must be between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX}"
+    error_size = "Each image must be less than 5 MB."
+    item_images = request.files.getall("item_images")
+    num_images = len(item_images)
+    
+    if num_images < ITEM_IMAGES_MIN or num_images > ITEM_IMAGES_MAX:
+        raise Exception(400, error_num)
+
+    for img in item_images:
+        if img.file:
+            img.file.seek(0, 2)  
+            if img.file.tell() > MAX_FILE_SIZE:
+                raise Exception(400, error_size)
+            img.file.seek(0) 
+
+    return item_images
 
 
 ########################################################################################### EMAILS
@@ -228,6 +249,7 @@ def send_verification_email(from_email, to_email, verification_id):
         return "error"
     
 
+
 ##############################
 def send_password_reset_email(from_email, to_email, user_pk):
     try:
@@ -253,6 +275,8 @@ def send_password_reset_email(from_email, to_email, user_pk):
         print(ex)
         return "error"
     
+
+
 ##############################
 def send_confirm_delete(from_email, to_email, user_pk):
     try:
