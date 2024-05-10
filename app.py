@@ -199,16 +199,23 @@ def _():
             q = db.execute(query, (user['user_pk'], x.ITEMS_PER_PAGE,))
             items = q.fetchall()
             return template("profile_partner.html", is_logged=True, user=user, items=items, is_partner=is_partner)
+  
+  
         elif user['user_role'] == 'customer':
             # Customers get a customer-specific profile
             return template("profile_customer.html", is_logged=True, user=user)
-        else:
-            # For other roles, fetch items and show a general profile
+  
+
+        elif user['user_role'] == 'admin':
             q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
+            q2 = db.execute("SELECT * FROM users WHERE user_role != 'admin'")
             items = q.fetchall()
+            users = q2.fetchall()
             is_admin = user['user_role'] == 'admin'
             # Render a template with item information for other roles
-            return template("profile.html", is_logged=True, items=items, user=user, is_admin=is_admin)
+            return template("profile.html", is_logged=True, items=items, user=user, users=users, is_admin=is_admin)
+   
+   
     except Exception as ex:
         response.status = 303
         response.set_header('Location', '/login')
@@ -266,7 +273,7 @@ def _():
     try:
 
         # Get the updated password and confirm password from the form
-        user_pk = request.forms.get("user_pk")
+        user_pk = x.validate_user_pk()
         print(user_pk)
         user_password = request.forms.get("user_password")
         user_confirm_password = request.forms.get("user_confirm_password")
@@ -515,7 +522,7 @@ def _():
 
 
 
-##############################
+############################## TODO: SHOULD WE VALIDATE USER PK?
 @post("/forgot_password")
 def _():
     try:
@@ -575,9 +582,11 @@ def _(id):
 def _():
     try:
 
+        # User
         user = x.validate_user_logged()
         user_pk = user['user_pk']
 
+        # Item
         item_pk = uuid.uuid4().hex
         item_name = x.validate_item_name()
         item_description = x.validate_item_description()
@@ -590,6 +599,7 @@ def _():
         item_deleted_at = 0
         item_is_blocked = 0
 
+        # Images
         item_images = request.files.getall("item_images")
         if not item_images:
             response.status = 400
@@ -636,7 +646,7 @@ def _():
 def _():
     try:
 
-        item_pk = request.forms.get("item_pk")
+        item_pk = x.validate_item_pk()
         print(item_pk)
 
         db = x.db()

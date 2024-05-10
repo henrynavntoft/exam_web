@@ -57,14 +57,14 @@ def validate_user_logged():
 
 ############################## TODO: WE NEED TO VALIDATE IDS/PKS
 
-USER_ID_LEN = 32
-USER_ID_REGEX = "^[a-f0-9]{32}$"
+USER_PK_LEN = 32
+USER_PK_REGEX = "^[a-f0-9]{32}$"
 
-def validate_user_id():
-	error = f"user_id invalid"
-	user_id = request.forms.get("user_id", "").strip()      
-	if not re.match(USER_ID_REGEX, user_id): raise Exception(error, 400)
-	return user_id
+def validate_user_pk():
+	error = f"user_pk invalid"
+	user_pk = request.forms.get("user_pk", "").strip()      
+	if not re.match(USER_PK_REGEX, user_pk): raise Exception(error, 400)
+	return user_pk
 
 
 ##############################

@@ -2,45 +2,63 @@
 
 <main id="profile" class="mt-16 p-4">
 
-    <h1>Hello, {{user['user_first_name']}}</h1>
 
-    <section class="mb-10">
-        <h1 class="text-2xl">Profile</h1>
+
+    <section class="my-10">
+        <h1 class="text-xl">Hello, {{user['user_first_name']}}</h1>
         <p>
-            Welcome to your profile. Here you can see your bookings, your favorite items and your settings.
+            This is the <span class="text-dragon-fruit">Admin</span> Dashboard.
         </p>
+        <p>Here you can see your bookings, your favorite items and your settings.</p>
     </section>
 
     <section class="mb-10">
-        <h1>Edit profile</h1>
+        <h1 class="text-xl">Edit profile</h1>
         <p>
-            Change your email address, password or other settings.
+            Change your username, first name and last time.
         </p>
         %include("__frm_edit_profile")
     </section>
 
     <section class="mb-10">
-        <h1>Forgot password?</h1>
-        <p>
-            Enter your email address and we will send you a link to reset your password.
-        </p>
+        <h1 class="text-xl">Forgot password?</h1>
+
         %include("__frm_forgot_password")
     </section>
 
     <section class="mb-10">
-        <h1>Delete profile?</h1>
+        <h1 class="text-xl">Delete profile?</h1>
         <p>
             Are you sure you want to delete your profile? This action cannot be undone.
         </p>
+        <p>You will receive and email with confirmation</p>
         %include("__frm_delete_profile")
     </section>
 
-    <section id="items" class="grid grid-cols-[1fr_1fr] gap-4 mb-2">
-        % for item in items:
-        %include("_item")
-        % end
+    <section class="mb-10">
+        <h1 class="text-xl">All properties</h1>
+        <p>
+            Here you can see all properties, you can block and delete them.
+        </p>
+        <div id="items" class="grid grid-cols-[1fr_1fr] gap-4 mb-2">
+            % for item in items:
+            %include("_item")
+            % end
+        </div>
+        %include("__btn_more")
     </section>
-    %include("__btn_more")
+
+    <section class="mb-10">
+        <h1 class="text-xl">All users.</h1>
+        <p>
+            Here you can see all properties, you can block and delete them.
+        </p>
+        <div id="users" class="grid grid-cols-[1fr_1fr] gap-4 mb-2">
+            % for user in users:
+            %include("_user")
+            % end
+    </section>
+
 
 </main>
 
