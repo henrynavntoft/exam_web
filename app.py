@@ -85,7 +85,6 @@ def _():
         items = q.fetchall()
         print(items)
         
-        # vi skal kigge på dette, og finde ud af hvordan vi viser / for forskellige users
         is_logged = False
         is_admin = False
         
@@ -97,8 +96,10 @@ def _():
         except:
             pass
 
+
+
         return template("index.html", items=items, mapbox_token=credentials.mapbox_token, 
-                        is_logged=is_logged, is_admin=is_admin) 
+                        is_logged=is_logged, is_admin=is_admin)
     
     except Exception as ex:
         print(ex)
@@ -232,9 +233,8 @@ def _():
             JOIN users_items ui ON i.item_pk = ui.item_fk 
             WHERE ui.user_fk = ? 
             ORDER BY i.item_created_at 
-            LIMIT 0, ?
             """
-            q = db.execute(query, (user['user_pk'], x.ITEMS_PER_PAGE,))
+            q = db.execute(query, (user['user_pk'],))
             items = q.fetchall()
             return template("profile_partner.html", is_logged=True, user=user, items=items, is_partner=is_partner)
   
