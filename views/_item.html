@@ -34,10 +34,16 @@
         % if get("is_logged", False) and get("is_admin", False):
         <section class="flex gap-2">
             <form id="{{item['item_pk']}}">
-                <input name="item_id" hidden type="text" value="{{item['item_pk']}}">
-                <button mix-data="[id='{{item['item_pk']}}']" mix-post="/toogle_item_block">
+                <input name="item_pk" hidden type="text" value="{{item['item_pk']}}">
+                % if item['item_is_blocked'] == 0:
+                <button mix-data="[id='{{item['item_pk']}}']" mix-post="/block_item">
                     Block
                 </button>
+                % else:
+                <button mix-data="[id='{{item['item_pk']}}']" mix-post="/unblock_item">
+                    Unblock
+                </button>
+                % end
             </form>
             <form id="{{item['item_pk']}}_1">
                 <input name="item_pk" type="text" hidden value="{{item['item_pk']}}">

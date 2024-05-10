@@ -153,21 +153,59 @@ def _(page_number):
 
 
 ##############################
-@post("/toogle_item_block")
+@post("/block_item")
 def _():
     try:
+        item_pk = x.validate_item_pk()
         db = x.db()
-        item_id = request.forms.get("item_id", '')
-        return f"""
-        <template mix-target="[id='{item_id}']" mix-replace>
-            xxxxx
+        db.execute("UPDATE items SET item_is_blocked = 1 WHERE item_pk = ?", (item_pk,))
+       
+        q = db.execute("SELECT user_email FROM users JOIN users_items ON users.user_pk = users_items.user_fk WHERE users_items.item_fk = ?", (item_pk,))
+        user_info = q.fetchone()  
+
+        user_email = user_info['user_email']
+
+        db.commit()
+
+        x.item_blocked(x.SENDER_EMAIL, user_email, item_pk)
+
+        return """
+        <template mix-redirect="/profile">
         </template>
         """
     except Exception as ex:
-        pass
+        response.status = ex.args[1]
+        return ex.args[0]
     finally:
-        if "db" in locals(): db.close() 
+        if "db" in locals(): db.close()
 
+
+##############################
+@post("/unblock_item")
+def _():
+    try:
+        item_pk = x.validate_item_pk()
+        
+        db = x.db()
+        db.execute("UPDATE items SET item_is_blocked = 0 WHERE item_pk = ?", (item_pk,))
+
+        q = db.execute("SELECT user_email FROM users JOIN users_items ON users.user_pk = users_items.user_fk WHERE users_items.item_fk = ?", (item_pk,))
+        user_info = q.fetchone()  
+
+        user_email = user_info['user_email']
+
+        db.commit()
+
+        x.item_unblocked(x.SENDER_EMAIL, user_email, item_pk)   
+        return """
+        <template mix-redirect="/profile">
+        </template>
+        """
+    except Exception as ex:
+        response.status = ex.args[1]
+        return ex.args[0]
+    finally:
+        if "db" in locals(): db.close()
 
 ############################## PROFILE
 ##############################
@@ -200,7 +238,7 @@ def _():
             items = q.fetchall()
             return template("profile_partner.html", is_logged=True, user=user, items=items, is_partner=is_partner)
   
-  
+
         elif user['user_role'] == 'customer':
             # Customers get a customer-specific profile
             return template("profile_customer.html", is_logged=True, user=user)
@@ -444,7 +482,51 @@ def _(id):
         print(ex)
         return ex
     finally:
-        if "db" in locals(): db.close()         
+        if "db" in locals(): db.close()
+
+##############################
+@post("/block_user")
+def _():
+    try:
+        user_email = x.validate_user_email()
+        user_pk = x.validate_user_pk()
+        db = x.db()
+        q = db.execute("UPDATE users SET user_is_blocked = 1 WHERE user_pk = ?", (user_pk,))
+        db.commit()
+
+        x.user_blocked(x.SENDER_EMAIL, user_email, user_pk)
+
+        return """
+        <template mix-redirect="/profile">
+        </template>
+        """
+    except Exception as ex:
+        response.status = ex.args[1]
+        return ex.args[0]
+    finally:
+        if "db" in locals(): db.close()    
+
+##############################
+@post("/unblock_user")
+def _():
+    try:
+        user_email = x.validate_user_email()
+        user_pk = x.validate_user_pk()
+        db = x.db()
+        q = db.execute("UPDATE users SET user_is_blocked = 0 WHERE user_pk = ?", (user_pk,))
+        db.commit()
+
+        x.user_unblocked(x.SENDER_EMAIL, user_email, user_pk)
+        
+        return """
+        <template mix-redirect="/profile">
+        </template>
+        """
+    except Exception as ex:
+        response.status = ex.args[1]
+        return ex.args[0]
+    finally:
+        if "db" in locals(): db.close()
 
 
 ############################## LOGIN

@@ -1,12 +1,31 @@
 <div class="user">
-    <div class="flex flex-col gap-2 justify-between mt-2 bg-gray-400 p-4 rounded-lg">
+    <div class="flex flex-col gap-2 justify-between mt-2 bg-gray-200 p-4 rounded-lg">
         <div>
-            {{user["user_first_name"]}} {{user["user_last_name"]}}
+            <p class="text-xl">{{user["user_first_name"]}} {{user["user_last_name"]}}</p>
         </div>
-        <div>{{user["user_role"]}}</div>
-        <div> {{user["user_email"]}}</div>
+        <div>
+            <p>User role: {{user["user_role"]}}</p>
+        </div>
+        <div>
+            <p>Email: {{user["user_email"]}}</p>
+        </div>
 
-        <button>Block</button>
+
+        <form id="{{user['user_pk']}}">
+            <input name="user_pk" hidden type="text" value="{{user['user_pk']}}">
+            <input name="user_email" hidden type="text" value="{{user['user_email']}}">
+            % if user['user_is_blocked'] == 0:
+            <button mix-data="[id='{{user['user_pk']}}']" mix-post="/block_user">
+                Block
+            </button>
+            % else:
+            <button mix-data="[id='{{user['user_pk']}}']" mix-post="/unblock_user">
+                Unblock
+            </button>
+            % end
+        </form>
+
+
     </div>
 
 </div>

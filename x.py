@@ -230,6 +230,7 @@ def validate_item_images():
 
 ########################################################################################### EMAILS
 
+SENDER_EMAIL = "henrylnavntoft@gmail.com"
 
 ##############################
 def send_verification_email(from_email, to_email, verification_id):
@@ -317,11 +318,107 @@ def send_confirm_delete(from_email, to_email, user_pk):
         return "error"
 
 
+##############################
+def user_blocked(from_email, to_email, user_pk):
+    try:
+        message = MIMEMultipart()
+        message["To"] = from_email
+        message["From"] = to_email
+        message["Subject"] = 'Your profile has been blocked'
+        email_body = template("views/blocked_profile_email", key=user_pk)
+ 
+        messageText = MIMEText(email_body, 'html')
+        message.attach(messageText)
+ 
+        email = from_email
+        password = 'jglkhstighdhpreb'
+ 
+        server = smtplib.SMTP('smtp.gmail.com:587')
+        server.ehlo('Gmail')
+        server.starttls()
+        server.login(email, password)
+        server.sendmail(from_email, to_email, message.as_string())
+        server.quit()
+    except Exception as ex:
+        print(ex)
+        return "error"
+    
+##############################
+def user_unblocked(from_email, to_email, user_pk):
+    try:
+        message = MIMEMultipart()
+        message["To"] = from_email
+        message["From"] = to_email
+        message["Subject"] = 'Your profile has been unblocked'
+        email_body = template("views/unblocked_profile_email", key=user_pk)
+ 
+        messageText = MIMEText(email_body, 'html')
+        message.attach(messageText)
+ 
+        email = from_email
+        password = 'jglkhstighdhpreb'
+ 
+        server = smtplib.SMTP('smtp.gmail.com:587')
+        server.ehlo('Gmail')
+        server.starttls()
+        server.login(email, password)
+        server.sendmail(from_email, to_email, message.as_string())
+        server.quit()
+    except Exception as ex:
+        print(ex)
+        return "error"
+
+##############################
+def item_blocked (from_email, to_email, item_pk):
+    try:
+        message = MIMEMultipart()
+        message["To"] = from_email
+        message["From"] = to_email
+        message["Subject"] = 'Your property has been blocked'
+        email_body = template("views/blocked_item_email", key=item_pk)
+ 
+        messageText = MIMEText(email_body, 'html')
+        message.attach(messageText)
+ 
+        email = from_email
+        password = 'jglkhstighdhpreb'
+ 
+        server = smtplib.SMTP('smtp.gmail.com:587')
+        server.ehlo('Gmail')
+        server.starttls()
+        server.login(email, password)
+        server.sendmail(from_email, to_email, message.as_string())
+        server.quit()
+    except Exception as ex:
+        print(ex)
+        return "error"
 
 
 
-
-
+##############################
+def item_unblocked (from_email, to_email, item_pk):
+    try:
+        message = MIMEMultipart()
+        message["To"] = from_email
+        message["From"] = to_email
+        message["Subject"] = 'Your property has been unblocked'
+        email_body = template("views/unblocked_item_email", key=item_pk)
+ 
+        messageText = MIMEText(email_body, 'html')
+        message.attach(messageText)
+ 
+        email = from_email
+        password = 'jglkhstighdhpreb'
+ 
+        server = smtplib.SMTP('smtp.gmail.com:587')
+        server.ehlo('Gmail')
+        server.starttls()
+        server.login(email, password)
+        server.sendmail(from_email, to_email, message.as_string())
+        server.quit()
+    except Exception as ex:
+        print(ex)
+        return "error"
 
 
 
