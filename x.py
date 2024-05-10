@@ -157,6 +157,20 @@ def validate_user_role():
 
 #TODO: finsih validation
 ############################## 
+ITEM_PK_LEN = 32
+ITEM_PK_REGEX = "^[a-f0-9]{32}$"
+
+def validate_item_pk():
+	error = f"item pk invalid"
+	item_pk = request.forms.get("item_pk", "").strip()      
+	if not re.match(ITEM_PK_REGEX, item_pk): raise Exception(error, 400)
+	return item_pk
+
+
+
+
+
+##############################
 ITEM_NAME_MIN = 6
 ITEM_NAME_MAX = 50
 ITEM_NAME_REGEX = "^.{6,50}$"

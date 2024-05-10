@@ -664,6 +664,31 @@ def _():
     finally:
         if "db" in locals(): db.close()
 
+##############################
+@put("/edit_item")
+def _():
+    try:
+
+        item_pk = x.validate_item_pk()
+        item_name = x.validate_item_name()
+        item_description = x.validate_item_description()
+        item_price_per_night = x.validate_item_price_per_night()
+        item_updated_at = epoch.time()
+
+        db = x.db()
+        db.execute("UPDATE items SET item_name = ?, item_description = ?, item_price_per_night = ?, item_updated_at = ? WHERE item_pk = ?", (item_name, item_description, item_price_per_night, item_updated_at, item_pk))
+        db.commit()
+
+        return """
+        <template mix-redirect="/profile">
+        </template>
+        """
+    except Exception as ex:
+        response.status = ex.args[1]
+        return ex.args[0]
+    finally:
+        if "db" in locals(): db.close()
+
 
 
 # RUNNING THE SERVER
