@@ -87,19 +87,23 @@ def _():
         
         is_logged = False
         is_admin = False
+        is_customer = False
+        is_partner = False
         
         try:    
             user = x.validate_user_logged()
             is_logged = True
             if user['user_role'] == 'admin':  
                 is_admin = True
+            elif user['user_role'] == 'customer':
+                is_customer = True
+            elif user['user_role'] == 'partner':
+                is_partner = True
         except:
             pass
 
-
-
         return template("index.html", items=items, mapbox_token=credentials.mapbox_token, 
-                        is_logged=is_logged, is_admin=is_admin)
+                        is_logged=is_logged, is_admin=is_admin, is_customer=is_customer, is_partner=is_partner)
     
     except Exception as ex:
         print(ex)
@@ -124,16 +128,33 @@ def _(page_number):
 
         is_logged = False
         is_admin = False
+        is_partner = False
+        is_customer = False
         try:
             user = x.validate_user_logged()
             is_logged = True
-            is_admin = user['user_role'] == 'admin' 
+            if user['user_role'] == 'admin':
+                is_admin = True
+                is_partner = False
+                is_customer = False
+            elif user['user_role'] == 'partner':
+                is_admin = False
+                is_partner = True
+                is_customer = False
+            elif user['user_role'] == 'customer':
+                is_admin = False
+                is_partner = False
+                is_customer = True
+            else:
+                is_admin = False
+                is_partner = False
+                is_customer = False
         except:
             pass
 
         html = ""
         for item in items: 
-            html += template("_item", item=item, is_logged=is_logged, is_admin=is_admin)    
+            html += template("_item", item=item, is_logged=is_logged, is_admin=is_admin, is_partner=is_partner, is_customer=is_customer)    
         btn_more = template("__btn_more", page_number=next_page)
         if len(items) < x.ITEMS_PER_PAGE: 
             btn_more = ""
@@ -218,7 +239,7 @@ def _():
 
         # Validate if the user is logged in and retrieve user data
         user = x.validate_user_logged()
-        is_admin = False
+       
 
         # Access the database
         db = x.db()

@@ -86,5 +86,9 @@
             </dialog>
         </section>
         % end
+        % if get("is_logged", False) and get("is_customer", False):
+        <button>Book</button>
+        <button>Cancel booking</button>
+        % end
     </div>
 </div>
