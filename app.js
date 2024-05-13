@@ -29,10 +29,11 @@ function mapPins(items) {
   items.forEach((item) => {
     const popup = new mapboxgl.Popup({ offset: 40 }).setHTML(
       `<div class="flex flex-col gap-2 p-2 rounded-lg">
+        <img src="images/${item.item_splash_image}" alt="${item.item_name}" class="w-full h-32 object-cover rounded-lg">
          <h3 class="text-xl">${item.item_name}</h3>
          <p>${item.item_description}</p>
          <p>Price per night: <b> ${item.item_price_per_night} </b> DKK</p>
-        <button>Book</button>
+        <button>See more</button>
        </div>`
     );
 
