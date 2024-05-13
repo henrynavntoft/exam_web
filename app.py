@@ -84,11 +84,14 @@ def _():
         q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
         items = q.fetchall()
         print(items)
+
         
+
         is_logged = False
         is_admin = False
         is_customer = False
         is_partner = False
+        
         
         try:    
             user = x.validate_user_logged()
@@ -101,6 +104,9 @@ def _():
                 is_partner = True
         except:
             pass
+
+        
+      
 
         return template("index.html", items=items, mapbox_token=credentials.mapbox_token, 
                         is_logged=is_logged, is_admin=is_admin, is_customer=is_customer)
@@ -137,6 +143,10 @@ def _(page_number):
                 is_admin = True
                 is_partner = False
                 is_customer = False
+            elif user['user_role'] == 'partner':
+                is_admin = False
+                is_partner = True
+                is_customer = False
             elif user['user_role'] == 'customer':
                 is_admin = False
                 is_partner = False
@@ -150,7 +160,7 @@ def _(page_number):
 
         html = ""
         for item in items: 
-            html += template("_item", item=item, is_logged=is_logged, is_admin=is_admin, is_partner=is_partner, is_customer=is_customer)    
+            html += template("_item", item=item, is_logged=is_logged, is_admin=is_admin, is_customer=is_customer)    
         btn_more = template("__btn_more", page_number=next_page)
         if len(items) < x.ITEMS_PER_PAGE: 
             btn_more = ""
@@ -161,7 +171,7 @@ def _(page_number):
         <template mix-target="#more" mix-replace>
             {btn_more}
         </template>
-        <template mix-function="test">{json.dumps(items)}</template>
+        <template mix-function="mapPins">{json.dumps(items)}</template>
         """
     except Exception as ex:
         print(ex)
