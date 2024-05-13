@@ -1,4 +1,20 @@
 let markers = {};
+let lastOpenedPopup = null;
+
+function managePopup(popup, marker) {
+  if (
+    lastOpenedPopup &&
+    lastOpenedPopup.isOpen() &&
+    lastOpenedPopup !== popup
+  ) {
+    lastOpenedPopup.remove(); // Close the currently open popup if it's not the same as the new one
+  }
+  if (!popup.isOpen()) {
+    popup.addTo(map);
+    map.flyTo({ center: marker.getLngLat(), zoom: 14 });
+  }
+  lastOpenedPopup = popup; // Update the last opened popup reference
+}
 
 function mapPins(items) {
   try {
@@ -8,15 +24,16 @@ function mapPins(items) {
     return;
   }
 
-  let lastOpenedPopup = null;
+  console.log("Items:", items);
 
   items.forEach((item) => {
-    const popup = new mapboxgl.Popup({ offset: 50 }).setHTML(
+    const popup = new mapboxgl.Popup({ offset: 40 }).setHTML(
       `<div class="flex flex-col gap-2 p-2 rounded-lg">
-                <h3 class="text-xl">${item.item_name}</h3>
-                <p>${item.item_description}</p>
-                <button>View property</button>
-            </div>`
+         <h3 class="text-xl">${item.item_name}</h3>
+         <p>${item.item_description}</p>
+         <p>Price per night: <b> ${item.item_price_per_night} </b> DKK</p>
+        <button>Book</button>
+       </div>`
     );
 
     const marker = new mapboxgl.Marker()
@@ -27,42 +44,24 @@ function mapPins(items) {
     markers[item.item_pk] = marker;
 
     marker.getElement().addEventListener("click", () => {
-      if (lastOpenedPopup === popup && popup.isOpen()) {
-        popup.remove();
-      } else {
-        popup.addTo(map);
-        map.flyTo({ center: [item.item_lon, item.item_lat], zoom: 14 });
-      }
-      lastOpenedPopup = popup;
+      managePopup(popup, marker);
     });
   });
 }
 
-// FOR MARKER CLICK
-const itemsContainer = document.getElementById("items"); // Adjust the ID according to your actual container
-
+const itemsContainer = document.getElementById("items");
 itemsContainer.addEventListener("click", function (event) {
-  // Check if the clicked element or one of its parents is an item
   let targetElement = event.target;
   while (targetElement && !targetElement.id.startsWith("item-")) {
     targetElement = targetElement.parentNode;
   }
 
   if (targetElement && targetElement.id.startsWith("item-")) {
-    const itemPk = targetElement.id.split("-")[1]; // Extract item_pk
+    const itemPk = targetElement.id.split("-")[1];
     const marker = markers[itemPk];
 
     if (marker) {
-      const popup = marker.getPopup();
-      if (!popup.isOpen()) {
-        popup.addTo(map);
-        map.flyTo({
-          center: marker.getLngLat(),
-          zoom: 15,
-        });
-      } else {
-        popup.remove(); // Optionally toggle the popup off if it's already open
-      }
+      managePopup(marker.getPopup(), marker);
     }
   }
 });

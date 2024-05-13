@@ -311,7 +311,7 @@ def _():
 
 
         try:
-            import production
+            import production #type: ignore
             is_cookie_https = True
         except:
             is_cookie_https = False
@@ -590,7 +590,7 @@ def _():
         print(user)
         
         try:
-            import production 
+            import production #type: ignore
             is_cookie_https = True
         except:
             is_cookie_https = False        
