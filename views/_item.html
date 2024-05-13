@@ -87,8 +87,18 @@
         </section>
         % end
         % if get("is_logged", False) and get("is_customer", False):
-        <button>Book</button>
-        <button>Cancel booking</button>
+        <form id="{{item['item_pk']}}">
+            <input name="item_pk" hidden type="text" value="{{item['item_pk']}}">
+            % if item['item_is_booked'] == 0:
+            <button mix-data="[id='{{item['item_pk']}}']" mix-post="/book_item">
+                Book
+            </button>
+            % else:
+            <button mix-data="[id='{{item['item_pk']}}']" mix-post="/unbook_item">
+                Unbook
+            </button>
+            % end
+        </form>
         % end
     </div>
 </div>

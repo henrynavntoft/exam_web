@@ -8,6 +8,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 
+
 ITEMS_PER_PAGE = 2
 COOKIE_SECRET = "41ebeca46f3b-4d77-a8e2-554659075C6319a2fbfb-9a2D-4fb6-Afcad32abb26a5e0"
 
@@ -206,26 +207,17 @@ def validate_item_description():
 ############################## TODO: Fix this, we need to validate the image size and number of images
 ITEM_IMAGES_MIN = 1
 ITEM_IMAGES_MAX = 5
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB in bytes
 
 
 def validate_item_images():
-    error_num = f"Number of images must be between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX}"
-    error_size = "Each image must be less than 5 MB."
+    error_num = "Number of images must be between 1 and 5."
     item_images = request.files.getall("item_images")
-    num_images = len(item_images)
-    
-    if num_images < ITEM_IMAGES_MIN or num_images > ITEM_IMAGES_MAX:
+
+    if not item_images or len(item_images) < 1 or len(item_images) > 5:
         raise Exception(400, error_num)
 
-    for img in item_images:
-        if img.file:
-            img.file.seek(0, 2)  
-            if img.file.tell() > MAX_FILE_SIZE:
-                raise Exception(400, error_size)
-            img.file.seek(0) 
-
     return item_images
+
 
 
 ########################################################################################### EMAILS

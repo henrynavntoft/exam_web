@@ -1,4 +1,4 @@
-function test(items) {
+function mapPins(items) {
   // console.log(items)
   items = JSON.parse(items);
   console.log(items);

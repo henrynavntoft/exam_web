@@ -103,7 +103,7 @@ def _():
             pass
 
         return template("index.html", items=items, mapbox_token=credentials.mapbox_token, 
-                        is_logged=is_logged, is_admin=is_admin, is_customer=is_customer, is_partner=is_partner)
+                        is_logged=is_logged, is_admin=is_admin, is_customer=is_customer)
     
     except Exception as ex:
         print(ex)
@@ -136,10 +136,6 @@ def _(page_number):
             if user['user_role'] == 'admin':
                 is_admin = True
                 is_partner = False
-                is_customer = False
-            elif user['user_role'] == 'partner':
-                is_admin = False
-                is_partner = True
                 is_customer = False
             elif user['user_role'] == 'customer':
                 is_admin = False
@@ -681,7 +677,7 @@ def _(id):
 
 ############################## ITEMS
 ############################## TODO: check this out, how the images are processed and validated
-@post("/add_property")
+@post("/add_item")
 def _():
     try:
 
@@ -701,20 +697,18 @@ def _():
         item_updated_at = 0
         item_deleted_at = 0
         item_is_blocked = 0
+        item_is_booked = 0
 
         # Images
-        item_images = request.files.getall("item_images")
-        if not item_images:
-            response.status = 400
-            return "No images provided"
+        item_images = x.validate_item_images()
 
         # Initialize the first image URL for the splash image
         first_image_filename = f"{item_pk}_1.{item_images[0].filename.split('.')[-1]}"
 
         # Insert the property into the items table
         db = x.db()
-        db.execute("INSERT INTO items (item_pk, item_name, item_description, item_splash_image, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (item_pk, item_name, item_description, first_image_filename, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked))
+        db.execute("INSERT INTO items (item_pk, item_name, item_description, item_splash_image, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked, item_is_booked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (item_pk, item_name, item_description, first_image_filename, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked, item_is_booked))
         db.commit()
 
         db.execute("INSERT INTO users_items (user_fk, item_fk) VALUES (?, ?)",
@@ -741,6 +735,45 @@ def _():
         response.status = 500
         return str(ex)
 
+    finally:
+        if "db" in locals(): db.close()
+
+
+##############################
+@post("/book_item")
+def _():
+    try:
+        item_pk = x.validate_item_pk()
+        db = x.db()
+        db.execute("UPDATE items SET item_is_booked = 1 WHERE item_pk = ?", (item_pk,))
+        db.commit()
+        
+        return """
+        <template mix-redirect="/">
+        </template>
+        """
+    except Exception as ex:
+        response.status = ex.args[1]
+        return ex.args[0]
+    finally:
+        if "db" in locals(): db.close()
+
+##############################
+@post("/unbook_item")
+def _():
+    try:
+        item_pk = x.validate_item_pk()
+        db = x.db()
+        db.execute("UPDATE items SET item_is_booked = 0 WHERE item_pk = ?", (item_pk,))
+        db.commit()
+        
+        return """
+        <template mix-redirect="/">
+        </template>
+        """
+    except Exception as ex:
+        response.status = ex.args[1]
+        return ex.args[0]
     finally:
         if "db" in locals(): db.close()
 
@@ -777,7 +810,7 @@ def _():
     finally:
         if "db" in locals(): db.close()
 
-##############################
+############################## TODO: THIS NEEDS TO BE ABLE TO EDIT IMAGES AND UPLOAD NEW ONES
 @put("/edit_item")
 def _():
     try:
