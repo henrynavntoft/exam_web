@@ -24,12 +24,24 @@
 
 <script>
   mapboxgl.accessToken = "{{mapbox_token}}"
-  var map = new mapboxgl.Map({
+  let map = new mapboxgl.Map({
     container: 'map',
     style: 'mapbox://styles/mapbox/streets-v11',
     center: [12.5683, 55.6761],
     zoom: 12
   });
+
+  let items = "{{items}}".replace(/&#039;/g, '"');
+  console.log(items)
+
+
+  setTimeout(function () {
+    if (typeof mapPins === 'function') {
+      mapPins(items);
+    } else {
+      console.error('mapPins function is not defined');
+    }
+  }, 1000);
 </script>
 
 

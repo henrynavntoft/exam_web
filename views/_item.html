@@ -1,7 +1,8 @@
 % import x
 
 <div class="item" id="item-{{item['item_pk']}}">
-    <img alt="" src="/images/{{item['item_splash_image']}}" class="w-full h-48 aspect-square object-cover rounded-lg">
+    <img alt="" src="/images/{{item['item_splash_image']}}"
+        class="w-full h-48 aspect-square object-cover rounded-lg cursor-pointer">
     <div class="flex justify-between mt-2">
         <span>
             {{item["item_name"]}}
