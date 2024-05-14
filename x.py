@@ -207,6 +207,7 @@ def validate_item_description():
 ############################## TODO: Fix this, we need to validate the image size and number of images
 ITEM_IMAGES_MIN = 1
 ITEM_IMAGES_MAX = 5
+ITEM_IMAGE_MAX_SIZE = 1024 * 1024 * 5 # 5MB
 
 
 def validate_item_images():

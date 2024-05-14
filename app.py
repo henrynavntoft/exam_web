@@ -181,7 +181,7 @@ def _(page_number):
 
 
 ##############################
-@post("/block_item")
+@put("/block_item")
 def _():
     try:
         item_pk = x.validate_item_pk()
@@ -209,7 +209,7 @@ def _():
 
 
 ##############################
-@post("/unblock_item")
+@put("/unblock_item")
 def _():
     try:
         item_pk = x.validate_item_pk()
@@ -512,7 +512,7 @@ def _(id):
         if "db" in locals(): db.close()
 
 ##############################
-@post("/block_user")
+@put("/block_user")
 def _():
     try:
         user_email = x.validate_user_email()
@@ -534,7 +534,7 @@ def _():
         if "db" in locals(): db.close()    
 
 ##############################
-@post("/unblock_user")
+@put("/unblock_user")
 def _():
     try:
         user_email = x.validate_user_email()
@@ -750,7 +750,7 @@ def _():
 
 
 ##############################
-@post("/book_item")
+@put("/book_item")
 def _():
     try:
         item_pk = x.validate_item_pk()
@@ -769,7 +769,7 @@ def _():
         if "db" in locals(): db.close()
 
 ##############################
-@post("/unbook_item")
+@put("/unbook_item")
 def _():
     try:
         item_pk = x.validate_item_pk()
@@ -787,7 +787,7 @@ def _():
     finally:
         if "db" in locals(): db.close()
 
-############################## TODO: THIS NEEDS TO DELETE ASSOSIATED IMAGES??
+############################## DELETE VIRKER IKKE??
 @post("/delete_item") 
 def _():
     try:

@@ -37,11 +37,11 @@
             <form id="{{item['item_pk']}}">
                 <input name="item_pk" hidden type="text" value="{{item['item_pk']}}">
                 % if item['item_is_blocked'] == 0:
-                <button mix-data="[id='{{item['item_pk']}}']" mix-post="/block_item">
+                <button mix-data="[id='{{item['item_pk']}}']" mix-put="/block_item">
                     Block
                 </button>
                 % else:
-                <button mix-data="[id='{{item['item_pk']}}']" mix-post="/unblock_item">
+                <button mix-data="[id='{{item['item_pk']}}']" mix-put="/unblock_item">
                     Unblock
                 </button>
                 % end
@@ -67,6 +67,8 @@
             </button>
             <dialog id="dialog-{{item['item_pk']}}" class="rounded-lg p-4 w-[500px]">
                 <h3 class="text-lg font-bold">Edit {{item["item_name"]}}</h3>
+                <img class="w-full h-48 aspect-square object-cover rounded-lg mb-2" src="
+                    images/{{item['item_splash_image']}}" alt="">
                 <form id="{{item['item_pk']}}_2" class="flex flex-col gap-2">
                     <input name="item_pk" type="text" hidden value="{{item['item_pk']}}"
                         mix-check="{{x.ITEM_PK_REGEX}}">
@@ -76,7 +78,7 @@
                         value="{{item['item_price_per_night']}}" mix-check="{{x.ITEM_PRICE_REGEX}}">
                     <input name="item_description" class="w-full border" type="text" placeholder="Property description"
                         value="{{item['item_description']}}" mix-check="{{x.ITEM_DESCRIPTION_REGEX}}">
-                    <input value="" name="item_images" class="w-full border" type="file" multiple="multiple"
+                    <input value="" name="item_images" class="w-full border p-2" type="file" multiple="multiple"
                         accept="image/*" mix-check="">
                     <button mix-data="[id='{{item['item_pk']}}_2']" mix-put="/edit_item">
                         Edit
@@ -91,11 +93,11 @@
         <form id="{{item['item_pk']}}">
             <input name="item_pk" hidden type="text" value="{{item['item_pk']}}">
             % if item['item_is_booked'] == 0:
-            <button mix-data="[id='{{item['item_pk']}}']" mix-post="/book_item">
+            <button mix-data="[id='{{item['item_pk']}}']" mix-put="/book_item">
                 Book
             </button>
             % else:
-            <button mix-data="[id='{{item['item_pk']}}']" mix-post="/unbook_item">
+            <button mix-data="[id='{{item['item_pk']}}']" mix-put="/unbook_item">
                 Unbook
             </button>
             % end
