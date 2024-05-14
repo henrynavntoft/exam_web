@@ -211,11 +211,16 @@ ITEM_IMAGE_MAX_SIZE = 1024 * 1024 * 5 # 5MB
 
 
 def validate_item_images():
-    error_num = "Number of images must be between 1 and 5."
     item_images = request.files.getall("item_images")
 
-    if not item_images or len(item_images) < 1 or len(item_images) > 5:
-        raise Exception(400, error_num)
+    if len(item_images) == 0 or len(item_images) < ITEM_IMAGES_MIN or len(item_images) > ITEM_IMAGES_MAX:
+        raise Exception(f"Invalid number of images, must be between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX}", 400)
+
+    allowed_extensions = ['.png', '.jpg', '.webp']
+    for image in item_images:
+        if not pathlib.Path(image.filename).suffix.lower() in allowed_extensions:
+            raise Exception("Invalid image extension", 400)
+
 
     return item_images
 
