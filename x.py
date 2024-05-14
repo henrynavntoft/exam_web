@@ -241,12 +241,24 @@ def send_verification_email(from_email, to_email, verification_id):
             base_url =   "http://0.0.0.0"
 
 
-        email_body = """
-            <body>
-                <h1>You need to verify your account</h1>
-                <a href="{base_url}/activate-user/{verification_id}">Activate user!</a>
-            </body>
-        """
+        email_body= f""" 
+                        <!DOCTYPE html>
+                        <html lang="en">
+                        <head>
+                            <meta charset="UTF-8" />
+                            <meta
+                            name="viewport"
+                            content="width=device-width, initial-scale=1.0"
+                            />
+                            <title>Verification Email</title>
+                        </head>
+                        <body>
+                            <h1>You need to verify your account</h1>
+                            <a href="{base_url}/activate_user/{verification_id}">Activate user </a>
+                        </body>
+                        </html>
+
+             """
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
