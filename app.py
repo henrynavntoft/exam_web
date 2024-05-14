@@ -849,10 +849,10 @@ def _():
 
 # RUNNING THE SERVER
 ##############################
-try:
-  import production #type: ignore
-  application = default_app()
-except Exception as ex:
-  print("Running local server")
-  run(host="0.0.0.0", port=80, debug=True, reloader=True)
 
+try:
+    import production #type: ignore
+    application = default_app()
+except Exception as ex:
+    print("Running local server")
+    run(host="0.0.0.0", port=80, debug=True, reloader=True)
