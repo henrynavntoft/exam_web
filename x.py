@@ -234,13 +234,19 @@ def send_verification_email(from_email, to_email, verification_id):
         message["From"] = to_email
         message["Subject"] = 'Testing my email to verify'
 
+        try:
+            import production #type: ignore
+            base_url = "https://henrynavntoft.pythonanywhere.com"
+        except:
+            base_url =   "http://0.0.0.0"
+
 
         email_body = """
             <body>
                 <h1>You need to verify your account</h1>
-                <a href="http://0.0.0.0/activate_user/{key}">Activate user </a>
+                <a href="{base_url}/activate-user/{verification_id}">Activate user </a>
             </body>
-        """.format(key=verification_id)
+        """
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
