@@ -244,7 +244,7 @@ def send_verification_email(from_email, to_email, verification_id):
         email_body = """
             <body>
                 <h1>You need to verify your account</h1>
-                <a href="{base_url}/activate-user/{verification_id}">Activate user </a>
+                <a href="{base_url}/activate-user/{verification_id}">Activate user!</a>
             </body>
         """
  
