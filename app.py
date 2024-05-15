@@ -81,9 +81,17 @@ def _():
 def _():
     try:
         db = x.db()
-        q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
-        items = q.fetchall()
-        print(items)
+        query = """
+        SELECT i.*, img.image_url 
+        FROM items i 
+        LEFT JOIN item_images img ON i.item_pk = img.item_fk 
+        ORDER BY i.item_created_at 
+        LIMIT 0, ?
+        """
+        q = db.execute(query, (x.ITEMS_PER_PAGE,))
+        rows = q.fetchall()
+        
+        items = x.group_items_with_images(rows)
 
         
 
@@ -104,9 +112,6 @@ def _():
                 is_partner = True
         except:
             pass
-
-        
-      
 
         return template("index.html", items=items, mapbox_token=credentials.mapbox_token, 
                         is_logged=is_logged, is_admin=is_admin, is_customer=is_customer)
@@ -186,13 +191,25 @@ def _():
     try:
         item_pk = x.validate_item_pk()
         db = x.db()
+        
+        # Update the item to set it as blocked
         db.execute("UPDATE items SET item_is_blocked = 1 WHERE item_pk = ?", (item_pk,))
-       
-        q = db.execute("SELECT user_email FROM users JOIN users_items ON users.user_pk = users_items.user_fk WHERE users_items.item_fk = ?", (item_pk,))
-        user_info = q.fetchone()  
-
+        
+        # Retrieve the owner's email directly from the users table using the item_owner field from the items table
+        query = """
+        SELECT u.user_email 
+        FROM users u 
+        JOIN items i ON u.user_pk = i.item_owner_fk 
+        WHERE i.item_pk = ?
+        """
+        q = db.execute(query, (item_pk,))
+        user_info = q.fetchone()
+        
+        if not user_info:
+            raise Exception("User not found", 404)
+        
         user_email = user_info['user_email']
-
+        
         db.commit()
 
         x.item_blocked(x.SENDER_EMAIL, user_email, item_pk)
@@ -213,14 +230,27 @@ def _():
 def _():
     try:
         item_pk = x.validate_item_pk()
-        
         db = x.db()
+        
+        # Update the item to set it as blocked
         db.execute("UPDATE items SET item_is_blocked = 0 WHERE item_pk = ?", (item_pk,))
-
-        q = db.execute("SELECT user_email FROM users JOIN users_items ON users.user_pk = users_items.user_fk WHERE users_items.item_fk = ?", (item_pk,))
-        user_info = q.fetchone()  
-
+        
+        # Retrieve the owner's email directly from the users table using the item_owner field from the items table
+        query = """
+        SELECT u.user_email 
+        FROM users u 
+        JOIN items i ON u.user_pk = i.item_owner_fk 
+        WHERE i.item_pk = ?
+        """
+        q = db.execute(query, (item_pk,))
+        user_info = q.fetchone()
+        
+        if not user_info:
+            raise Exception("User not found", 404)
+        
         user_email = user_info['user_email']
+        
+        db.commit()
 
         db.commit()
 
@@ -255,14 +285,16 @@ def _():
             is_partner = True
             # Partners get a partner-specific profile with their items
             query = """
-            SELECT i.* 
+            SELECT i.*, img.image_url 
             FROM items i 
-            JOIN users_items ui ON i.item_pk = ui.item_fk 
-            WHERE ui.user_fk = ? 
-            ORDER BY i.item_created_at 
+            LEFT JOIN item_images img ON i.item_pk = img.item_fk 
+            WHERE i.item_owner_fk = ? 
+            ORDER BY i.item_created_at
             """
             q = db.execute(query, (user['user_pk'],))
-            items = q.fetchall()
+            rows = q.fetchall()
+            items = x.group_items_with_images(rows)
+
             return template("profile_partner.html", is_logged=True, user=user, items=items, is_partner=is_partner)
   
 
@@ -272,12 +304,23 @@ def _():
   
 
         elif user['user_role'] == 'admin':
-            q = db.execute("SELECT * FROM items ORDER BY item_created_at LIMIT 0, ?", (x.ITEMS_PER_PAGE,))
+            query = """
+            SELECT i.*, img.image_url 
+            FROM items i 
+            LEFT JOIN item_images img ON i.item_pk = img.item_fk 
+            ORDER BY i.item_created_at 
+            LIMIT 0, ?
+            """
+            q = db.execute(query, (x.ITEMS_PER_PAGE,))
             q2 = db.execute("SELECT * FROM users WHERE user_role != 'admin'")
-            items = q.fetchall()
+            rows = q.fetchall()
             users = q2.fetchall()
             is_admin = user['user_role'] == 'admin'
-            # Render a template with item information for other roles
+
+            # Group items with their images
+            items = x.group_items_with_images(rows)
+
+            # Render a template with item information for admin
             return template("profile.html", is_logged=True, items=items, user=user, users=users, is_admin=is_admin)
    
    
@@ -296,9 +339,9 @@ def _():
         user = x.validate_user_logged()
         
         # Get the updated user information from the form
-        user_username = request.forms.get("user_username")
-        user_first_name = request.forms.get("user_first_name")
-        user_last_name = request.forms.get("user_last_name")
+        user_username = x.validate_user_username()
+        user_first_name = x.validate_user_first_name()
+        user_last_name = x.validate_user_last_name()
         user_updated_at = epoch.time()
         
         db = x.db()
@@ -708,29 +751,27 @@ def _():
         item_deleted_at = 0
         item_is_blocked = 0
         item_is_booked = 0
+        
 
         # Images
         item_images = x.validate_item_images()
 
         # Initialize the first image URL for the splash image
-        first_image_filename = f"{item_pk}_1.{item_images[0].filename.split('.')[-1]}"
+        first_image_filename = f"{item_pk}_{uuid.uuid4().hex}.{item_images[0].filename.split('.')[-1]}"
 
         # Insert the property into the items table
         db = x.db()
-        db.execute("INSERT INTO items (item_pk, item_name, item_description, item_splash_image, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked, item_is_booked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-                (item_pk, item_name, item_description, first_image_filename, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked, item_is_booked))
+        db.execute("INSERT INTO items (item_pk, item_name, item_description, item_splash_image, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked, item_is_booked, item_owner_fk) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (item_pk, item_name, item_description, first_image_filename, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked, item_is_booked, user_pk))
         db.commit()
 
-        db.execute("INSERT INTO users_items (user_fk, item_fk) VALUES (?, ?)",
-                (user_pk, item_pk))
-        db.commit()
 
 
         # Process each image, rename it, save it, and store just the filename in the database
-        for index, image in enumerate(item_images, start=1):
-            filename = f"{item_pk}_{index}.{image.filename.split('.')[-1]}"
+        for image in item_images:
+            filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
             path = f"images/{filename}"
-            image.save(path)  # Save the image with the new filename
+            image.save(path) # Save the image with the new filename
 
             # Insert the image filename into the item_images table (without path)
             db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
@@ -742,8 +783,25 @@ def _():
         """
 
     except Exception as ex:
-        response.status = 500
-        return str(ex)
+        try:
+            response.status = ex.args[1]
+            return f"""
+            <template mix-target="#toast">
+                <div mix-ttl="3000" class="error">
+                    {ex.args[0]}
+                </div>
+            </template>
+            """
+        except Exception as ex:
+            print(ex)
+            response.status = 500
+            return f"""
+            <template mix-target="#toast">
+                <div mix-ttl="3000" class="error">
+                   System under maintainance
+                </div>
+            </template>
+            """
 
     finally:
         if "db" in locals(): db.close()
@@ -787,7 +845,7 @@ def _():
     finally:
         if "db" in locals(): db.close()
 
-############################## DELETE VIRKER IKKE??
+############################## 
 @post("/delete_item") 
 def _():
     try:
@@ -824,15 +882,45 @@ def _():
 @put("/edit_item")
 def _():
     try:
-
         item_pk = x.validate_item_pk()
         item_name = x.validate_item_name()
         item_description = x.validate_item_description()
         item_price_per_night = x.validate_item_price_per_night()
         item_updated_at = epoch.time()
 
+        # Validate new images
+        new_images = x.validate_item_images()  # Assume this function exists for validating new images
+        
         db = x.db()
-        db.execute("UPDATE items SET item_name = ?, item_description = ?, item_price_per_night = ?, item_updated_at = ? WHERE item_pk = ?", (item_name, item_description, item_price_per_night, item_updated_at, item_pk))
+
+        # Update item details
+        db.execute("""
+            UPDATE items
+            SET item_name = ?, item_description = ?, item_price_per_night = ?, item_updated_at = ?
+            WHERE item_pk = ?
+        """, (item_name, item_description, item_price_per_night, item_updated_at, item_pk))
+        db.commit()
+
+        # Fetch existing images from the database
+        old_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (item_pk,)).fetchall()
+
+        # Delete old images from the filesystem and the database
+        for image in old_images:
+            file_path = os.path.join('images', image['image_url'])
+            if os.path.exists(file_path):
+                os.remove(file_path)
+
+        db.execute("DELETE FROM item_images WHERE item_fk = ?", (item_pk,))
+        db.commit()
+
+        # Process each new image, rename it, save it, and store the filename in the database
+        for image in new_images:
+            filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
+            path = f"images/{filename}"
+            image.save(path)  # Save the image with the new filename
+
+            # Insert the image filename into the item_images table (without path)
+            db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
         db.commit()
 
         return """
@@ -840,10 +928,17 @@ def _():
         </template>
         """
     except Exception as ex:
-        response.status = ex.args[1]
-        return ex.args[0]
+        response.status = 500
+        return f"""
+        <template mix-target="#toast">
+            <div mix-ttl="3000" class="error">
+                {ex.args[0]}
+            </div>
+        </template>
+        """
     finally:
         if "db" in locals(): db.close()
+
 
 
 

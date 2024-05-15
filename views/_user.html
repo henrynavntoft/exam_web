@@ -15,11 +15,11 @@
             <input name="user_pk" hidden type="text" value="{{user['user_pk']}}">
             <input name="user_email" hidden type="text" value="{{user['user_email']}}">
             % if user['user_is_blocked'] == 0:
-            <button mix-data="[id='{{user['user_pk']}}']" mix-post="/block_user">
+            <button mix-data="[id='{{user['user_pk']}}']" mix-put="/block_user">
                 Block
             </button>
             % else:
-            <button mix-data="[id='{{user['user_pk']}}']" mix-post="/unblock_user">
+            <button mix-data="[id='{{user['user_pk']}}']" mix-put="/unblock_user">
                 Unblock
             </button>
             % end

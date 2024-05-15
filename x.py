@@ -206,12 +206,12 @@ def validate_item_description():
 
 ############################## TODO: Fix this, we need to validate the image size and number of images
 ITEM_IMAGES_MIN = 1
-ITEM_IMAGES_MAX = 5
-ITEM_IMAGE_MAX_SIZE = 1024 * 1024 * 5 # 5MB
+ITEM_IMAGES_MAX = 3
 
 
 def validate_item_images():
     item_images = request.files.getall("item_images")
+
 
     if len(item_images) == 0 or len(item_images) < ITEM_IMAGES_MIN or len(item_images) > ITEM_IMAGES_MAX:
         raise Exception(f"Invalid number of images, must be between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX}", 400)
@@ -219,7 +219,7 @@ def validate_item_images():
     allowed_extensions = ['.png', '.jpg', '.webp']
     for image in item_images:
         if not pathlib.Path(image.filename).suffix.lower() in allowed_extensions:
-            raise Exception("Invalid image extension", 400)
+            raise Exception("Invalid image extension, or 0 images", 400)
 
 
     return item_images
@@ -262,8 +262,7 @@ def send_verification_email(from_email, to_email, verification_id):
                             <a href="{base_url}/activate_user/{verification_id}">Activate user </a>
                         </body>
                         </html>
-
-             """
+            """
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
@@ -293,7 +292,32 @@ def send_password_reset_email(from_email, to_email, user_pk):
         message["To"] = from_email
         message["From"] = to_email
         message["Subject"] = 'Password Reset'
-        email_body = template("views/password_reset_email", key=user_pk)
+        
+        try:
+            import production #type: ignore
+            base_url = "https://henrynavntoft.pythonanywhere.com"
+        except:
+            base_url =   "http://0.0.0.0"
+
+
+        email_body= f""" 
+                        <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Reset Password Email</title>
+</head>
+
+<body>
+    <h1>Reset Your Password</h1>
+    <p>Click the link below to reset your password:</p>
+    <a href="{base_url}/reset_password/{user_pk}">Reset Password</a>
+</body>
+
+</html>
+            """
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
@@ -320,7 +344,24 @@ def send_confirm_delete(from_email, to_email, user_pk):
         message["To"] = from_email
         message["From"] = to_email
         message["Subject"] = 'Your profile has been deleted'
-        email_body = template("views/deleted_profile_email", key=user_pk)
+
+
+        email_body= f""" 
+                        <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your profile has been deleted</title>
+</head>
+
+<body>
+    <h1>Your profile has been deleted</h1>
+</body>
+
+</html>
+            """
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
@@ -346,7 +387,23 @@ def user_blocked(from_email, to_email, user_pk):
         message["To"] = from_email
         message["From"] = to_email
         message["Subject"] = 'Your profile has been blocked'
-        email_body = template("views/blocked_profile_email", key=user_pk)
+        email_body= f""" 
+                       <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your user has been blocked</title>
+</head>
+
+<body>
+    <h1>Your user has been blocked</h1>
+
+</body>
+
+</html>
+            """
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
@@ -371,7 +428,23 @@ def user_unblocked(from_email, to_email, user_pk):
         message["To"] = from_email
         message["From"] = to_email
         message["Subject"] = 'Your profile has been unblocked'
-        email_body = template("views/unblocked_profile_email", key=user_pk)
+        email_body = f"""
+        <!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your user has been unblocked</title>
+</head>
+
+<body>
+    <h1>Your user has been unblocked</h1>
+
+</body>
+
+</html>
+        """
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
@@ -396,7 +469,23 @@ def item_blocked (from_email, to_email, item_pk):
         message["To"] = from_email
         message["From"] = to_email
         message["Subject"] = 'Your property has been blocked'
-        email_body = template("views/blocked_item_email", key=item_pk)
+        email_body = f"""
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your item has been blocked</title>
+</head>
+
+<body>
+    <h1>Your item has been blocked</h1>
+
+</body>
+
+</html>
+"""
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
@@ -423,7 +512,23 @@ def item_unblocked (from_email, to_email, item_pk):
         message["To"] = from_email
         message["From"] = to_email
         message["Subject"] = 'Your property has been unblocked'
-        email_body = template("views/unblocked_item_email", key=item_pk)
+        email_body = f"""
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Your item has been unblocked</title>
+</head>
+
+<body>
+    <h1>Your item has been unblocked</h1>
+
+</body>
+
+</html>
+"""
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
@@ -448,4 +553,30 @@ def item_unblocked (from_email, to_email, item_pk):
 
 
 
+###########################################################################################
 
+def group_items_with_images(rows):
+    items = {}
+    for row in rows:
+        item_pk = row['item_pk']
+        if item_pk not in items:
+            items[item_pk] = {
+                'item_pk': row['item_pk'],
+                'item_name': row['item_name'],
+                'item_description': row['item_description'],
+                'item_splash_image': row['item_splash_image'],
+                'item_price_per_night': row['item_price_per_night'],
+                'item_lat': row['item_lat'],
+                'item_lon': row['item_lon'],
+                'item_stars': row['item_stars'],
+                'item_created_at': row['item_created_at'],
+                'item_updated_at': row['item_updated_at'],
+                'item_deleted_at': row['item_deleted_at'],
+                'item_is_blocked': row['item_is_blocked'],
+                'item_is_booked': row['item_is_booked'],
+                'item_images': []
+            }
+        if row['image_url']:
+            items[item_pk]['item_images'].append(row['image_url'])
+
+    return list(items.values())
