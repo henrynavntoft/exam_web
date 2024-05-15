@@ -78,31 +78,37 @@
                 </button>
                 <dialog id="dialog-{{item['item_pk']}}" class="rounded-lg p-4 w-[500px]">
                     <h3 class="text-lg font-bold">Edit {{item["item_name"]}}</h3>
-                    % for image_url in item['item_images']:
-                    <div class="flex flex-row">
-                        <img alt="" src="/images/{{image_url}}"
-                            class="w-full h-48 aspect-square object-cover rounded-lg mb-2">
-                    </div>
-                    % end
                     <form id="{{item['item_pk']}}_2" class="flex flex-col gap-2">
+
                         <input name="item_pk" type="text" hidden value="{{item['item_pk']}}"
                             mix-check="{{x.ITEM_PK_REGEX}}">
+
                         <input name="item_name" class="w-full border" type="text" placeholder="Property name"
                             value="{{item['item_name']}}" mix-check="{{x.ITEM_NAME_REGEX}}">
+
                         <input name="item_price_per_night" class="w-full border" type="text"
                             placeholder="Price per night" value="{{item['item_price_per_night']}}"
                             mix-check="{{x.ITEM_PRICE_REGEX}}">
+
                         <input name="item_description" class="w-full border" type="text"
                             placeholder="Property description" value="{{item['item_description']}}"
                             mix-check="{{x.ITEM_DESCRIPTION_REGEX}}">
 
-
+                        <div id="existing-images" class="flex flex-wrap gap-2">
+                            % for image_url in item['item_images']:
+                            <div class="flex">
+                                <img src="/images/{{image_url}}" alt="Image" class="w-32 h-32 object-cover rounded-lg">
+                            </div>
+                            % end
+                        </div>
 
                         <input name="item_images" class="w-full border p-2" type="file" multiple="multiple"
                             accept="image/*" value="{{item['item_images']}}">
+
                         <button mix-data="[id='{{item['item_pk']}}_2']" mix-put="/edit_item">
                             Edit
                         </button>
+
                     </form>
                     <button class="mt-2"
                         onclick="document.getElementById('dialog-{{item['item_pk']}}').close()">Close</button>
