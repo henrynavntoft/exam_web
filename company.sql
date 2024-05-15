@@ -81,6 +81,8 @@ INSERT INTO items VALUES
 
 SELECT * FROM items;
 
+
+
 ------------------------------------------------------------
 
 DROP TABLE IF EXISTS item_images;
