@@ -5,7 +5,7 @@
 <div class="item" id="item-{{item['item_pk']}}">
     <div class="image-gallery">
         % for image_url in item['item_images']:
-        <img alt="" src="/images/{{image_url}}"
+        <img alt="" src="/images/{{image_url}}" alt="{{item['item_name']}}"
             class="w-full h-48 aspect-square object-cover rounded-lg cursor-pointer mb-2">
         % end
     </div>
@@ -68,7 +68,7 @@
                     Delete
                 </button>
             </form>
-            <button class="mb-2" onclick="document.getElementById('dialog-{{item['item_pk']}}').showModal()">
+            <button class="mb-2 open-dialog" data-dialog-id="dialog-{{ item['item_pk'] }}">
                 Edit details
             </button>
             <dialog id="dialog-{{item['item_pk']}}" class="rounded-lg p-4 w-[500px]">
@@ -103,8 +103,9 @@
                     </button>
 
                 </form>
-                <button class="mt-2"
-                    onclick="document.getElementById('dialog-{{item['item_pk']}}').close()">Close</button>
+                <button class="mt-2 close-dialog" data-dialog-id="dialog-{{ item['item_pk'] }}">
+                    Close
+                </button>
             </dialog>
         </section>
         % end
@@ -125,3 +126,22 @@
     </div>
 
 </div>
+
+
+<!-- IS THIS OKAY TO HAVE?? -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.open-dialog').forEach(button => {
+            button.addEventListener('click', function () {
+                const dialogId = this.getAttribute('data-dialog-id');
+                document.getElementById(dialogId).showModal();
+            });
+        });
+        document.querySelectorAll('.close-dialog').forEach(button => {
+            button.addEventListener('click', function () {
+                const dialogId = this.getAttribute('data-dialog-id');
+                document.getElementById(dialogId).close();
+            });
+        });
+    });
+</script>

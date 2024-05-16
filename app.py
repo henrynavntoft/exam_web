@@ -81,17 +81,21 @@ def _():
 def _():
     try:
         db = x.db()
+        # Query to select all items and their images without limit
         query = """
         SELECT i.*, img.image_url 
         FROM items i 
         LEFT JOIN item_images img ON i.item_pk = img.item_fk 
-        ORDER BY i.item_created_at 
-        LIMIT 0, ?
+        ORDER BY i.item_created_at
         """
-        q = db.execute(query, (x.ITEMS_PER_PAGE,))
+        q = db.execute(query)
         rows = q.fetchall()
         
+        # Group items with their images
         items = x.group_items_with_images(rows)
+
+        # Apply limit after grouping
+        items = items[:x.ITEMS_PER_PAGE]
 
         
 
@@ -130,12 +134,22 @@ def _(page_number):
         db = x.db()
         next_page = int(page_number) + 1
         offset = (int(page_number) - 1) * x.ITEMS_PER_PAGE
-        q = db.execute(f"""     SELECT * FROM items 
-                                ORDER BY item_created_at 
-                                LIMIT ? OFFSET {offset}
-                        """, (x.ITEMS_PER_PAGE,))
-        items = q.fetchall()
-        print(items)
+
+        # Query to select all items and their images without limit
+        query = """
+        SELECT i.*, img.image_url 
+        FROM items i 
+        LEFT JOIN item_images img ON i.item_pk = img.item_fk 
+        ORDER BY i.item_created_at
+        """
+        q = db.execute(query)
+        rows = q.fetchall()
+        
+        # Group items with their images
+        items = x.group_items_with_images(rows)
+
+        # Apply limit and offset after grouping
+        items = items[offset:offset + x.ITEMS_PER_PAGE]
 
         is_logged = False
         is_admin = False
@@ -308,10 +322,9 @@ def _():
             SELECT i.*, img.image_url 
             FROM items i 
             LEFT JOIN item_images img ON i.item_pk = img.item_fk 
-            ORDER BY i.item_created_at 
-            LIMIT 0, ?
+            ORDER BY i.item_created_at
             """
-            q = db.execute(query, (x.ITEMS_PER_PAGE,))
+            q = db.execute(query)
             q2 = db.execute("SELECT * FROM users WHERE user_role != 'admin'")
             rows = q.fetchall()
             users = q2.fetchall()
@@ -319,6 +332,8 @@ def _():
 
             # Group items with their images
             items = x.group_items_with_images(rows)
+
+            items = items[:x.ITEMS_PER_PAGE]
 
             # Render a template with item information for admin
             return template("profile.html", is_logged=True, items=items, user=user, users=users, is_admin=is_admin)
