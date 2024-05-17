@@ -1,12 +1,11 @@
 import pathlib
-# import sys
-# sys.path.insert(0, str(pathlib.Path(__file__).parent.resolve())+"/bottle")
 from bottle import request, response, template
 import re
 import sqlite3
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
+import requests
 
 
 ITEMS_PER_PAGE = 2
@@ -548,11 +547,6 @@ def item_unblocked (from_email, to_email, item_pk):
 
 
 
-
-
-
-
-
 ###########################################################################################
 
 def group_items_with_images(rows):
@@ -580,3 +574,22 @@ def group_items_with_images(rows):
             items[item_pk]['item_images'].append(row['image_url'])
 
     return list(items.values())
+
+
+###########################################################################################
+## ARANGODB
+
+def db_arango(query):
+    try:
+        url = "http://arangodb:8529/_api/cursor"
+        res = requests.post( url, json = query )
+        print(res)
+        print(res.text)
+        return res.json()
+    except Exception as ex:
+        print("#"*50)
+        print(ex)
+    finally:
+        pass
+
+    
