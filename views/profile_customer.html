@@ -3,33 +3,36 @@
 <main id="profile" class="mt-16 p-4">
 
     <section class="my-10">
-        <h1 class="text-xl">Hello, {{user['user_first_name']}}</h1>
+        <h1 class="text-4xl">Hello, {{user['user_first_name']}}</h1>
         <p>
             This is the <span class="text-dragon-fruit">Customer</span> Dashboard.
         </p>
         <p>Here you can see your bookings, your favorite items and your settings.</p>
     </section>
 
-    <section class="mb-10">
-        <h1 class="text-xl">Edit profile</h1>
-        <p>
-            Change your username, first name and last time.
-        </p>
+    <section class="mb-10 flex flex-col gap-4">
+        <div>
+            <h1 class="text-xl">Edit profile</h1>
+            <p>
+                Change your username, first name and last time.
+            </p>
+        </div>
         %include("__frm_edit_profile")
     </section>
 
-    <section class="mb-10">
+    <section class="mb-10 flex flex-col gap-4">
         <h1 class="text-xl">Forgot password?</h1>
 
         %include("__frm_forgot_password")
     </section>
 
-    <section class="mb-10">
-        <h1 class="text-xl">Delete profile?</h1>
-        <p>
-            Are you sure you want to delete your profile? This action cannot be undone.
-        </p>
-        <p>You will receive and email with confirmation</p>
+    <section class="mb-10 flex flex-col gap-4">
+        <div>
+            <h1 class="text-xl">Delete profile?</h1>
+            <p>
+                Are you sure you want to delete your profile? This action cannot be undone.
+            </p>
+        </div>
         %include("__frm_delete_profile")
     </section>
 
