@@ -1,18 +1,34 @@
 %import x
 
-
-
 <form id="frm_add_property" autocomplete="off" class="flex flex-col gap-2">
-    <input name="item_name" class="w-full border" type="text" placeholder="Property name" value=""
-        mix-check="{{x.ITEM_NAME_REGEX}}">
-    <input name="item_price_per_night" class="w-full border" type="text" placeholder="Price per night" value=""
-        mix-check="{{x.ITEM_PRICE_REGEX}}">
-    <input name="item_description" class="w-full border" type="text" placeholder="Property description" value=""
-        mix-check="{{x.ITEM_DESCRIPTION_REGEX}}">
-    <input name="item_images" class="w-full border p-2" type="file" multiple="multiple" accept="image/*">
+
+    <div>
+        <label for="item_name">Property name:</label>
+        <input id="item_name" name="item_name" class="w-full border" type="text" placeholder="" value=""
+            mix-check="{{x.ITEM_NAME_REGEX}}">
+    </div>
+
+    <div>
+        <label for="item_price_per_night">Price per night:</label>
+        <input id="item_price_per_night" name="item_price_per_night" class="w-full border" type="number" placeholder=""
+            value="" mix-check="{{x.ITEM_PRICE_REGEX}}">
+    </div>
+
+    <div>
+        <label for="item_description">Property description:</label>
+        <input id="item_description" name="item_description" class="w-full border" type="text" placeholder="" value=""
+            mix-check="{{x.ITEM_DESCRIPTION_REGEX}}">
+    </div>
+
+
+    <label for="item_images">Property images:</label>
+    <input id="item_images" name="item_images" class="w-full border p-2" type="file" multiple="multiple"
+        accept="image/*">
+    </div>
 
     <button class="" mix-data="#frm_add_property" mix-post="/add_item" mix-default="Add property"
         mix-await="Please wait ...">
         Add property
     </button>
+
 </form>

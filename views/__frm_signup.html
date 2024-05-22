@@ -1,35 +1,58 @@
 %import x
 
-
-
 <form id="frm_signup" autocomplete="off" class="flex flex-col gap-2 w-full mx-4 md:w-1/2">
     <fieldset>
         <legend>Choose Your Role:</legend>
         <div class="flex justify-around">
             <div>
-                <label for="user_role_customer">Im a customer</label>
+                <label for="user_role_customer">I'm a customer</label>
                 <input name="user_role" id="user_role_customer" class="w-full border" type="radio" placeholder="Role"
                     value="customer" checked>
             </div>
             <div>
-                <label for="user_role_partner">Im a partner</label>
+                <label for="user_role_partner">I'm a partner</label>
                 <input name="user_role" id="user_role_partner" class="w-full border" type="radio" placeholder="Role"
                     value="partner">
             </div>
         </div>
     </fieldset>
-    <input name="user_username" class="w-full border" type="text" placeholder="username" value=""
-        mix-check="{{x.USER_USERNAME_REGEX}}">
-    <input name="user_first_name" class="w-full border" type="text" placeholder="first name" value=""
-        mix-check="{{x.USER_USERNAME_REGEX}}">
-    <input name="user_last_name" class="w-full border" type="text" placeholder="last name" value=""
-        mix-check="{{x.USER_USERNAME_REGEX}}">
-    <input name="user_email" class="w-full border" type="text" placeholder="email" value=""
-        mix-check="{{x.EMAIL_REGEX}}">
-    <input name="user_password" class="w-full border" type="password" placeholder="password" value=""
-        mix-check="{{x.USER_PASSWORD_REGEX}}">
-    <input name="user_confirm_password" class="w-full border" type="password" placeholder="confirm password" value=""
-        mix-check="{{x.USER_PASSWORD_REGEX}}">
+
+    <div>
+        <label for="user_username">Username:</label>
+        <input name="user_username" id="user_username" class="w-full border" type="text" placeholder="" value=""
+            mix-check="{{x.USER_USERNAME_REGEX}}" required>
+    </div>
+
+    <div>
+        <label for="user_first_name">First Name:</label>
+        <input name="user_first_name" id="user_first_name" class="w-full border" type="fname" placeholder="" value=""
+            mix-check="{{x.USER_USERNAME_REGEX}}" required>
+    </div>
+
+    <div>
+        <label for="user_last_name">Last Name:</label>
+        <input name="user_last_name" id="user_last_name" class="w-full border" type="lname" placeholder="" value=""
+            mix-check="{{x.USER_USERNAME_REGEX}}" required>
+    </div>
+
+    <div>
+        <label for="user_email">Email:</label>
+        <input name="user_email" id="user_email" class="w-full border" type="email" placeholder="" value=""
+            mix-check="{{x.EMAIL_REGEX}}" required>
+    </div>
+
+    <div>
+        <label for="user_password">Password:</label>
+        <input name="user_password" id="user_password" class="w-full border" type="password" placeholder="" value=""
+            mix-check="{{x.USER_PASSWORD_REGEX}}" required>
+    </div>
+
+    <div>
+        <label for="user_confirm_password">Confirm Password:</label>
+        <input name="user_confirm_password" id="user_confirm_password" class="w-full border" type="password"
+            placeholder="" value="" mix-check="{{x.USER_PASSWORD_REGEX}}" required>
+    </div>
+
     <button class="" mix-data="#frm_signup" mix-post="/signup" mix-default="Sign Up" mix-await="Please wait ...">
         Sign Up
     </button>

@@ -73,28 +73,11 @@
             </button>
             <dialog id="dialog-{{item['item_pk']}}" class="rounded-lg p-4 w-[500px]">
                 <h3 class="text-lg font-bold">Edit {{item["item_name"]}}</h3>
-                <form id="{{item['item_pk']}}_2" class="flex flex-col gap-2">
 
-                    <input name="item_pk" type="text" hidden value="{{item['item_pk']}}"
-                        mix-check="{{x.ITEM_PK_REGEX}}">
-
-
-                    <input name="item_name" class="w-full border" type="text" placeholder="Property name"
-                        value="{{item['item_name']}}" mix-check="{{x.ITEM_NAME_REGEX}}">
-
-                    <input name="item_images" class="w-full border p-2" type="file" multiple="multiple" accept="image/*"
-                        value="{{item['item_images']}}">
-
-                    <input name="item_price_per_night" class="w-full border" type="text" placeholder="Price per night"
-                        value="{{item['item_price_per_night']}}" mix-check="{{x.ITEM_PRICE_REGEX}}">
-
-                    <input name="item_description" class="w-full border" type="text" placeholder="Property description"
-                        value="{{item['item_description']}}" mix-check="{{x.ITEM_DESCRIPTION_REGEX}}">
-
-
-
-                    <div id="existing-images" class="flex flex-wrap gap-2">
-                        % for image_url in item['item_images']:
+                <div id="existing-images" class="flex flex-wrap gap-2">
+                    % for image_url in item['item_images']:
+                    <div class="flex flex-col">
+                        <p>Existing images:</p>
                         <div class="flex relative">
                             <form id="delete_item_{{item['item_pk']}}">
                                 <button class="absolute top-2 right-2 max-w-7 max-h-7"
@@ -103,16 +86,50 @@
                             </form>
                             <img src="/images/{{image_url}}" alt="Image" class="w-32 h-32 object-cover rounded-lg">
                         </div>
-                        % end
+                    </div>
+                    % end
+                </div>
+
+                <form id="{{item['item_pk']}}_2" class="flex flex-col gap-2">
+
+                    <input name="item_pk" type="text" hidden value="{{item['item_pk']}}"
+                        mix-check="{{x.ITEM_PK_REGEX}}">
+
+
+                    <div>
+                        <label for="item_name">Property name:</label>
+                        <input name="item_name" class="w-full border" type="text" placeholder="Property name"
+                            value="{{item['item_name']}}" mix-check="{{x.ITEM_NAME_REGEX}}">
+                    </div>
+
+                    <div>
+                        <label for="item_images">Property images:</label>
+                        <input name="item_images" class="w-full border p-2" type="file" multiple="multiple"
+                            accept="image/*" value="{{item['item_images']}}">
+                    </div>
+
+                    <div>
+                        <label for="item_price_per_night">Price per night:</label>
+                        <input name="item_price_per_night" class="w-full border" type="text"
+                            placeholder="Price per night" value="{{item['item_price_per_night']}}"
+                            mix-check="{{x.ITEM_PRICE_REGEX}}">
+                    </div>
+
+                    <div>
+                        <label for="item_description">Property description:</label>
+                        <input name="item_description" class="w-full border" type="text"
+                            placeholder="Property description" value="{{item['item_description']}}"
+                            mix-check="{{x.ITEM_DESCRIPTION_REGEX}}">
                     </div>
 
 
 
                     <button mix-data="[id='{{item['item_pk']}}_2']" mix-put="/edit_item">
-                        Edit
+                        Edit property
                     </button>
 
                 </form>
+
                 <button class="mt-2 close-dialog" data-dialog-id="dialog-{{ item['item_pk'] }}">
                     Close
                 </button>
