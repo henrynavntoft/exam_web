@@ -6,7 +6,7 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import smtplib
 import requests
-
+from io import BytesIO
 
 ITEMS_PER_PAGE = 2
 COOKIE_SECRET = "41ebeca46f3b-4d77-a8e2-554659075C6319a2fbfb-9a2D-4fb6-Afcad32abb26a5e0"
@@ -39,16 +39,17 @@ def validate_user_logged():
     return user
 
 
-############################## TODO: DO WE NEED THIS???
+############################## 
 
-""" def validate_logged():
-    # Prevent logged pages from caching
-    response.add_header("Cache-Control", "no-cache, no-store, must-revalidate")
-    response.add_header("Pragma", "no-cache")
-    response.add_header("Expires", "0")  
-    user_id = request.get_cookie("id", secret = COOKIE_SECRET_KEY)
-    if not user_id: raise Exception("***** user not logged *****", 400)
-    return user_id """
+def validate_user_has_rights_by_item_pk(user, item_pk):
+    database = db()
+    q = database.execute("SELECT * FROM items WHERE item_pk = ?", (item_pk,))
+    item = q.fetchone()
+
+    if user['user_pk'] == item['item_owner_fk']:
+        return True
+    else:
+        raise Exception("You do not have the rights to do that", 400)
 
 
 ########################################################################################### USER VALIDATION
@@ -203,26 +204,39 @@ def validate_item_description():
   if not re.match(ITEM_DESCRIPTION_REGEX, item_description): raise Exception(error, 400)
   return item_description
 
-############################## TODO: Fix this, we need to validate the image size and number of images
+##############################
 ITEM_IMAGES_MIN = 1
-ITEM_IMAGES_MAX = 3
-
+ITEM_IMAGES_MAX = 5
+ITEM_IMAGE_MAX_SIZE = 1024 * 1024 * 5  # 5MB
 
 def validate_item_images():
-    item_images = request.files.getall("item_images")
+    try:
+        item_images = request.files.getall("item_images")
 
+        # If no images are provided, return an empty list
+        if not item_images:
+            return []
 
-    if len(item_images) == 0 or len(item_images) < ITEM_IMAGES_MIN or len(item_images) > ITEM_IMAGES_MAX:
-        raise Exception(f"Invalid number of images, must be between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX}", 400)
+        if len(item_images) < ITEM_IMAGES_MIN or len(item_images) > ITEM_IMAGES_MAX:
+            raise Exception(f"Invalid number of images, must be between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX}", 400)
 
-    allowed_extensions = ['.png', '.jpg', '.webp']
-    for image in item_images:
-        if not pathlib.Path(image.filename).suffix.lower() in allowed_extensions:
-            raise Exception("Invalid image extension, or 0 images", 400)
+        allowed_extensions = ['.png', '.jpg', '.jpeg', '.webp']
+        for image in item_images:
+            if pathlib.Path(image.filename).suffix.lower() not in allowed_extensions:
+                raise Exception("Invalid image extension", 400)
 
+            # Read the file into memory and check its size
+            file_in_memory = BytesIO(image.file.read())
+            if len(file_in_memory.getvalue()) > ITEM_IMAGE_MAX_SIZE:
+                raise Exception("Image size exceeds the maximum allowed size of 5MB", 400)
 
-    return item_images
+            # Go back to the start of the file for further operations
+            image.file.seek(0)
 
+        return item_images
+    except Exception as ex:
+        print(ex)
+        raise 
 
 
 ########################################################################################### EMAILS

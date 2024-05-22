@@ -10,6 +10,7 @@ import uuid
 import time as epoch
 import random
 import os
+from pathlib import Path
 
 
 
@@ -702,7 +703,7 @@ def _():
         x.send_password_reset_email('henrylnavntoft@gmail.com', user_email, user_pk)
         return """
         <template mix-target="#toast">
-            <div mix-ttl="3000" class="success">
+            <div mix-ttl="3000" class="error">
                 Password reset email sent successfully
             </div>
         </template>
@@ -740,6 +741,43 @@ def _(id):
         if "db" in locals(): db.close()
 
 
+##############################
+@put("/book_item")
+def _():
+    try:
+        item_pk = x.validate_item_pk()
+        db = x.db()
+        db.execute("UPDATE items SET item_is_booked = 1 WHERE item_pk = ?", (item_pk,))
+        db.commit()
+        
+        return """
+        <template mix-redirect="/">
+        </template>
+        """
+    except Exception as ex:
+        response.status = ex.args[1]
+        return ex.args[0]
+    finally:
+        if "db" in locals(): db.close()
+
+##############################
+@put("/unbook_item")
+def _():
+    try:
+        item_pk = x.validate_item_pk()
+        db = x.db()
+        db.execute("UPDATE items SET item_is_booked = 0 WHERE item_pk = ?", (item_pk,))
+        db.commit()
+        
+        return """
+        <template mix-redirect="/">
+        </template>
+        """
+    except Exception as ex:
+        response.status = ex.args[1]
+        return ex.args[0]
+    finally:
+        if "db" in locals(): db.close()
 
 
 ############################## ITEMS
@@ -821,50 +859,18 @@ def _():
         if "db" in locals(): db.close()
 
 
-##############################
-@put("/book_item")
-def _():
-    try:
-        item_pk = x.validate_item_pk()
-        db = x.db()
-        db.execute("UPDATE items SET item_is_booked = 1 WHERE item_pk = ?", (item_pk,))
-        db.commit()
-        
-        return """
-        <template mix-redirect="/">
-        </template>
-        """
-    except Exception as ex:
-        response.status = ex.args[1]
-        return ex.args[0]
-    finally:
-        if "db" in locals(): db.close()
 
-##############################
-@put("/unbook_item")
-def _():
-    try:
-        item_pk = x.validate_item_pk()
-        db = x.db()
-        db.execute("UPDATE items SET item_is_booked = 0 WHERE item_pk = ?", (item_pk,))
-        db.commit()
-        
-        return """
-        <template mix-redirect="/">
-        </template>
-        """
-    except Exception as ex:
-        response.status = ex.args[1]
-        return ex.args[0]
-    finally:
-        if "db" in locals(): db.close()
 
 ############################## 
 @post("/delete_item") 
 def _():
     try:
 
+        user = x.validate_user_logged()
         item_pk = x.validate_item_pk()
+
+        x.validate_user_has_rights_by_item_pk(user, item_pk)
+
         print(item_pk)
 
         db = x.db()
@@ -903,8 +909,11 @@ def _():
         item_updated_at = epoch.time()
 
         # Validate new images
-        new_images = x.validate_item_images()  # Assume this function exists for validating new images
-        
+        try:
+            new_images = x.validate_item_images()  
+        except Exception as ex:
+            new_images = []
+
         db = x.db()
 
         # Update item details
@@ -918,24 +927,29 @@ def _():
         # Fetch existing images from the database
         old_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (item_pk,)).fetchall()
 
-        # Delete old images from the filesystem and the database
-        for image in old_images:
-            file_path = os.path.join('images', image['image_url'])
-            if os.path.exists(file_path):
-                os.remove(file_path)
 
-        db.execute("DELETE FROM item_images WHERE item_fk = ?", (item_pk,))
-        db.commit()
+        if len(old_images) + len(new_images) < 1:
+            raise Exception(f"There must be at least 1 images for the item.", 400)
 
-        # Process each new image, rename it, save it, and store the filename in the database
-        for image in new_images:
-            filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
-            path = f"images/{filename}"
-            image.save(path)  # Save the image with the new filename
+        # Process new images if provided
+        if new_images:
+            total_images = len(old_images) + len(new_images)
+            if total_images > 5:
+                raise Exception("Total number of images exceeds the maximum allowed 5", 400)
 
-            # Insert the image filename into the item_images table (without path)
-            db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
-        db.commit()
+            # Process each new image, rename it, save it, and store the filename in the database
+            for image in new_images:
+                filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
+                path = Path(f"images/{filename}")
+                image.save(str(path))  # Save the image with the new filename
+
+                # Insert the image filename into the item_images table (without path)
+                db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
+            db.commit()
+
+        # Ensure there is at least one image
+        if len(old_images) + len(new_images) == 0:
+            raise Exception("There must be at least one image for the item.", 400)
 
         return """
         <template mix-redirect="/profile">
@@ -943,6 +957,7 @@ def _():
         """
     except Exception as ex:
         response.status = 500
+        print(f"Exception: {ex}")  # Debugging: Print the exception
         return f"""
         <template mix-target="#toast">
             <div mix-ttl="3000" class="error">
@@ -955,9 +970,70 @@ def _():
 
 
 
+##############################
+@delete("/delete_image/<image_url>")
+def _(image_url):
+    try:
+        user = x.validate_user_logged()
+        db = x.db()
+
+        # Fetch the image row and item details in one go
+        image_row = db.execute("SELECT * FROM item_images WHERE image_url = ?", (image_url,)).fetchone()
+        if image_row is None:
+            raise Exception("Image not found", 404)
+
+        item = db.execute("SELECT * FROM items WHERE item_pk = ?", (image_row['item_fk'],)).fetchone()
+        if item is None:
+            raise Exception("Item not found", 404)
+
+        # Fetch all images associated with the item
+        all_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (image_row['item_fk'],)).fetchall()
+
+        if item['item_owner_fk'] == user['user_pk']:
+            # Check how many images are left
+            remaining_images = len(all_images)
+            if remaining_images <= 1:
+                raise Exception("Cannot delete the last image of an item.", 400)
+
+            path = Path(f"images/{image_url}")
+
+            if path.exists():
+                path.unlink()  # Delete the image file
+                print("Image deleted successfully.")
+            else:
+                print("Image file not found.")
+
+            db.execute("DELETE FROM item_images WHERE image_url = ?", (image_url,))
+            db.commit()
+            return f"""
+            <template mix-redirect="/profile">
+            </template>
+            """
+        
+        else:
+            raise Exception("User does not have the right to delete this image", 403)
+        
+
+
+    except Exception as ex:
+        response.status = ex.args[1] if len(ex.args) > 1 else 500
+        return f"""
+        <template mix-target="#toast">
+            <div mix-ttl="3000" class="error">
+                {ex.args[0]}
+            </div>
+        </template>
+        """
+    finally:
+        if "db" in locals(): db.close()
+
+
+
+
+
 # ARANGO DB
 # CRUD OPERATIONS
-##############################
+########################################################################################################
 
 # Get all users
 ##############################
