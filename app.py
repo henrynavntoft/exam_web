@@ -82,13 +82,26 @@ def _():
 def _():
     try:
         db = x.db()
-        # Query to select all items and their images without limit
+        
+        is_logged = False
+        is_customer = False
+        
+        try:    
+            user = x.validate_user_logged()
+            is_logged = True
+            if user['user_role'] == 'customer':
+                is_customer = True
+        except:
+            pass
+
         query = """
-        SELECT i.*, img.image_url 
-        FROM items i 
-        LEFT JOIN item_images img ON i.item_pk = img.item_fk 
-        ORDER BY i.item_created_at
-        """
+            SELECT i.*, img.image_url 
+            FROM items i 
+            LEFT JOIN item_images img ON i.item_pk = img.item_fk 
+            WHERE i.item_is_blocked = 0
+            ORDER BY i.item_created_at
+            """
+        
         q = db.execute(query)
         rows = q.fetchall()
         
@@ -97,28 +110,9 @@ def _():
 
         # Apply limit after grouping
         items = items[:x.ITEMS_PER_PAGE]
-        
-
-        is_logged = False
-        is_admin = False
-        is_customer = False
-        is_partner = False
-        
-        
-        try:    
-            user = x.validate_user_logged()
-            is_logged = True
-            if user['user_role'] == 'admin':  
-                is_admin = True
-            elif user['user_role'] == 'customer':
-                is_customer = True
-            elif user['user_role'] == 'partner':
-                is_partner = True
-        except:
-            pass
 
         return template("index.html", items=items, mapbox_token=credentials.mapbox_token, 
-                        is_logged=is_logged, is_admin=is_admin, is_customer=is_customer)
+                        is_logged=is_logged, is_customer=is_customer)
     
     except Exception as ex:
         print(ex)
@@ -126,30 +120,12 @@ def _():
     finally:
         if "db" in locals(): db.close()
 
+
 ############################## GET ITEMS
 ############################## 
 @get("/items/page/<page_number>")
 def _(page_number):
     try:
-        db = x.db()
-        next_page = int(page_number) + 1
-        offset = (int(page_number) - 1) * x.ITEMS_PER_PAGE
-
-        # Query to select all items and their images without limit
-        query = """
-        SELECT i.*, img.image_url 
-        FROM items i 
-        LEFT JOIN item_images img ON i.item_pk = img.item_fk 
-        ORDER BY i.item_created_at
-        """
-        q = db.execute(query)
-        rows = q.fetchall()
-        
-        # Group items with their images
-        items = x.group_items_with_images(rows)
-
-        # Apply limit and offset after grouping
-        items = items[offset:offset + x.ITEMS_PER_PAGE]
 
         is_logged = False
         is_admin = False
@@ -176,6 +152,34 @@ def _(page_number):
                 is_customer = False
         except:
             pass
+
+        db = x.db()
+        next_page = int(page_number) + 1
+        offset = (int(page_number) - 1) * x.ITEMS_PER_PAGE
+
+        if user['user_role'] == 'admin':
+            query = """
+            SELECT i.*, img.image_url 
+            FROM items i 
+            LEFT JOIN item_images img ON i.item_pk = img.item_fk
+            ORDER BY i.item_created_at
+            """
+        else:
+            query = """
+        SELECT i.*, img.image_url 
+        FROM items i 
+        LEFT JOIN item_images img ON i.item_pk = img.item_fk
+        WHERE i.item_is_blocked = 0
+        ORDER BY i.item_created_at
+        """
+        q = db.execute(query)
+        rows = q.fetchall()
+        
+        # Group items with their images
+        items = x.group_items_with_images(rows)
+
+        # Apply limit and offset after grouping
+        items = items[offset:offset + x.ITEMS_PER_PAGE]
 
         html = ""
         for item in items: 
@@ -302,7 +306,7 @@ def _():
             SELECT i.*, img.image_url 
             FROM items i 
             LEFT JOIN item_images img ON i.item_pk = img.item_fk 
-            WHERE i.item_owner_fk = ? 
+            WHERE i.item_owner_fk = ? AND i.item_is_blocked = 0
             ORDER BY i.item_created_at
             """
             q = db.execute(query, (user['user_pk'],))
