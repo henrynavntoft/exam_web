@@ -748,15 +748,19 @@ def _(id):
 @put("/book_item")
 def _():
     try:
-        item_pk = x.validate_item_pk()
-        db = x.db()
-        db.execute("UPDATE items SET item_is_booked = 1 WHERE item_pk = ?", (item_pk,))
-        db.commit()
+        user = x.validate_user_logged()
+        if user['user_role'] != "customer":
+            raise Exception("User is not a customer", 400)
+        else:
+            item_pk = x.validate_item_pk()
+            db = x.db()
+            db.execute("UPDATE items SET item_is_booked = 1 WHERE item_pk = ?", (item_pk,))
+            db.commit()
         
-        return """
-        <template mix-redirect="/">
-        </template>
-        """
+            return """
+            <template mix-redirect="/">
+            </template>
+            """
     except Exception as ex:
         response.status = ex.args[1]
         return ex.args[0]
@@ -767,15 +771,19 @@ def _():
 @put("/unbook_item")
 def _():
     try:
-        item_pk = x.validate_item_pk()
-        db = x.db()
-        db.execute("UPDATE items SET item_is_booked = 0 WHERE item_pk = ?", (item_pk,))
-        db.commit()
+        user = x.validate_user_logged()
+        if user['user_role'] != "customer":
+            raise Exception("User is not a customer", 400)
+        else:
+            item_pk = x.validate_item_pk()
+            db = x.db()
+            db.execute("UPDATE items SET item_is_booked = 0 WHERE item_pk = ?", (item_pk,))
+            db.commit()
         
-        return """
-        <template mix-redirect="/">
-        </template>
-        """
+            return """
+            <template mix-redirect="/">
+            </template>
+            """
     except Exception as ex:
         response.status = ex.args[1]
         return ex.args[0]
@@ -784,58 +792,61 @@ def _():
 
 
 ############################## ITEMS
-############################## TODO: check this out, how the images are processed and validated
+############################## 
 @post("/add_item")
 def _():
     try:
-
-        # User
         user = x.validate_user_logged()
-        user_pk = user['user_pk']
+        if user['user_role'] != "partner":
+            raise Exception("User is not a partner", 400)
+        else:
 
-        # Item
-        item_pk = uuid.uuid4().hex
-        item_name = x.validate_item_name()
-        item_description = x.validate_item_description()
-        item_price_per_night = x.validate_item_price_per_night()
-        item_lat = random.uniform(55.615, 55.727)
-        item_lon = random.uniform(12.451, 12.650)
-        item_stars = round(random.uniform(1, 5), 2)
-        item_created_at = epoch.time()
-        item_updated_at = 0
-        item_deleted_at = 0
-        item_is_blocked = 0
-        item_is_booked = 0
+            # User
+            user_pk = user['user_pk']
+
+            # Item
+            item_pk = uuid.uuid4().hex
+            item_name = x.validate_item_name()
+            item_description = x.validate_item_description()
+            item_price_per_night = x.validate_item_price_per_night()
+            item_lat = random.uniform(55.615, 55.727)
+            item_lon = random.uniform(12.451, 12.650)
+            item_stars = round(random.uniform(1, 5), 2)
+            item_created_at = epoch.time()
+            item_updated_at = 0
+            item_deleted_at = 0
+            item_is_blocked = 0
+            item_is_booked = 0
         
 
-        # Images
-        item_images = x.validate_item_images()
+            # Images
+            item_images = x.validate_item_images()
 
-        # Initialize the first image URL for the splash image
-        first_image_filename = f"{item_pk}_{uuid.uuid4().hex}.{item_images[0].filename.split('.')[-1]}"
+            # Initialize the first image URL for the splash image
+            first_image_filename = f"{item_pk}_{uuid.uuid4().hex}.{item_images[0].filename.split('.')[-1]}"
 
-        # Insert the property into the items table
-        db = x.db()
-        db.execute("INSERT INTO items (item_pk, item_name, item_description, item_splash_image, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked, item_is_booked, item_owner_fk) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            # Insert the property into the items table
+            db = x.db()
+            db.execute("INSERT INTO items (item_pk, item_name, item_description, item_splash_image, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked, item_is_booked, item_owner_fk) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 (item_pk, item_name, item_description, first_image_filename, item_price_per_night, item_lat, item_lon, item_stars, item_created_at, item_updated_at, item_deleted_at, item_is_blocked, item_is_booked, user_pk))
-        db.commit()
-
-
-
-        # Process each image, rename it, save it, and store just the filename in the database
-        for image in item_images:
-            filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
-            path = f"images/{filename}"
-            image.save(path) # Save the image with the new filename
-
-            # Insert the image filename into the item_images table (without path)
-            db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
             db.commit()
 
-        return """
-        <template mix-redirect="/profile">
-        </template>
-        """
+
+
+            # Process each image, rename it, save it, and store just the filename in the database
+            for image in item_images:
+                filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
+                path = f"images/{filename}"
+                image.save(path) # Save the image with the new filename
+
+                # Insert the image filename into the item_images table (without path)
+                db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
+                db.commit()
+
+            return """
+            <template mix-redirect="/profile">
+            </template>
+            """
 
     except Exception as ex:
         try:
@@ -864,13 +875,11 @@ def _():
 
 
 
-############################## 
-@post("/delete_item") 
-def _():
+##############################  DELETE ITEM
+@delete("/delete_item/<item_pk>") 
+def _(item_pk):
     try:
-
         user = x.validate_user_logged()
-        item_pk = x.validate_item_pk()
 
         x.validate_user_has_rights_by_item_pk(user, item_pk)
 
@@ -901,63 +910,67 @@ def _():
     finally:
         if "db" in locals(): db.close()
 
-############################## TODO: THIS NEEDS TO BE ABLE TO EDIT IMAGES AND UPLOAD NEW ONES
+############################## EDIT ITEM
 @put("/edit_item")
 def _():
     try:
-        item_pk = x.validate_item_pk()
-        item_name = x.validate_item_name()
-        item_description = x.validate_item_description()
-        item_price_per_night = x.validate_item_price_per_night()
-        item_updated_at = epoch.time()
+        user = x.validate_user_logged()
+        if user['user_role'] != "partner":
+            raise Exception("User is not a partner", 400)
+        else:
+            item_pk = x.validate_item_pk()
+            item_name = x.validate_item_name()
+            item_description = x.validate_item_description()
+            item_price_per_night = x.validate_item_price_per_night()
+            item_updated_at = epoch.time()
 
-        # Validate new images
-        try:
-            new_images = x.validate_item_images()  
-        except Exception as ex:
-            new_images = []
+            # Validate new images
+            try:
+                new_images = x.validate_item_images()  
+            except Exception as ex:
+                new_images = []
 
-        db = x.db()
+            db = x.db()
 
-        # Update item details
-        db.execute("""
+            # Update item details
+            db.execute("""
             UPDATE items
             SET item_name = ?, item_description = ?, item_price_per_night = ?, item_updated_at = ?
             WHERE item_pk = ?
-        """, (item_name, item_description, item_price_per_night, item_updated_at, item_pk))
-        db.commit()
-
-        # Fetch existing images from the database
-        old_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (item_pk,)).fetchall()
-
-
-        if len(old_images) + len(new_images) < 1:
-            raise Exception(f"There must be at least 1 images for the item.", 400)
-
-        # Process new images if provided
-        if new_images:
-            total_images = len(old_images) + len(new_images)
-            if total_images > 5:
-                raise Exception("Total number of images exceeds the maximum allowed 5", 400)
-
-            # Process each new image, rename it, save it, and store the filename in the database
-            for image in new_images:
-                filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
-                path = Path(f"images/{filename}")
-                image.save(str(path))  # Save the image with the new filename
-
-                # Insert the image filename into the item_images table (without path)
-                db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
+            """, (item_name, item_description, item_price_per_night, item_updated_at, item_pk))
             db.commit()
 
-        # Ensure there is at least one image
-        if len(old_images) + len(new_images) == 0:
-            raise Exception("There must be at least one image for the item.", 400)
+            # Fetch existing images from the database
+            old_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (item_pk,)).fetchall()
 
-        return """
-        <template mix-redirect="/profile">
-        </template>
-        """
+
+            if len(old_images) + len(new_images) < 1:
+                raise Exception(f"There must be at least 1 images for the item.", 400)
+
+            # Process new images if provided
+            if new_images:
+                total_images = len(old_images) + len(new_images)
+                if total_images > 5:
+                    raise Exception("Total number of images exceeds the maximum allowed 5", 400)
+
+            # Process each new image, rename it, save it, and store the filename in the database
+                for image in new_images:
+                    filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
+                    path = Path(f"images/{filename}")
+                    image.save(str(path))  # Save the image with the new filename
+
+                    # Insert the image filename into the item_images table (without path)
+                    db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
+                db.commit()
+
+            # Ensure there is at least one image
+            if len(old_images) + len(new_images) == 0:
+                raise Exception("There must be at least one image for the item.", 400)
+
+            return """
+            <template mix-redirect="/profile">
+            </template>
+            """
     except Exception as ex:
         response.status = 500
         print(f"Exception: {ex}")  # Debugging: Print the exception

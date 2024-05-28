@@ -53,8 +53,7 @@
                 % end
             </form>
             <form id="{{item['item_pk']}}_1">
-                <input name="item_pk" type="text" hidden value="{{item['item_pk']}}">
-                <button mix-data="[id='{{item['item_pk']}}_1']" mix-post="/delete_item">
+                <button mix-data="[id='{{item['item_pk']}}_1']" mix-delete="/delete_item/{{item['item_pk']}}">
                     Delete
                 </button>
             </form>
@@ -63,8 +62,7 @@
         % if get("is_logged", False) and get("is_partner", False):
         <section class="flex gap-2">
             <form id="{{item['item_pk']}}_1">
-                <input name="item_pk" type="text" hidden value="{{item['item_pk']}}">
-                <button mix-data="[id='{{item['item_pk']}}_1']" mix-post="/delete_item">
+                <button mix-data="[id='{{item['item_pk']}}_1']" mix-delete="/delete_item/{{item['item_pk']}}">
                     Delete
                 </button>
             </form>
