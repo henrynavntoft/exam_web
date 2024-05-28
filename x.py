@@ -46,7 +46,7 @@ def validate_user_has_rights_by_item_pk(user, item_pk):
     q = database.execute("SELECT * FROM items WHERE item_pk = ?", (item_pk,))
     item = q.fetchone()
 
-    if user['user_pk'] == item['item_owner_fk']:
+    if user['user_pk'] == item['item_owner_fk'] or user['user_role'] == 'admin':
         return True
     else:
         raise Exception("You do not have the rights to do that", 400)
@@ -114,13 +114,6 @@ def validate_user_last_name():
   return user_last_name
 
 ##############################
-
-USER_PASSWORD_MIN = 6
-USER_PASSWORD_MAX = 50
-USER_PASSWORD_REGEX = "^.{6,50}$"
-
-##############################
-
 USER_PASSWORD_MIN = 6
 USER_PASSWORD_MAX = 50
 USER_PASSWORD_REGEX = "^.{6,50}$"
@@ -605,5 +598,3 @@ def db_arango(query):
         print(ex)
     finally:
         pass
-
-    

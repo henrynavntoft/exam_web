@@ -1,0 +1,11 @@
+bin
+include
+lib
+pyvenv.cfg
+__pycache__
+node_modules
+package.json
+package-lock.json
+credentials.py
+arangodb
+

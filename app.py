@@ -126,30 +126,20 @@ def _():
 @get("/items/page/<page_number>")
 def _(page_number):
     try:
-
         is_logged = False
         is_admin = False
         is_partner = False
         is_customer = False
+        
         try:
             user = x.validate_user_logged()
             is_logged = True
             if user['user_role'] == 'admin':
                 is_admin = True
-                is_partner = False
-                is_customer = False
             elif user['user_role'] == 'partner':
-                is_admin = False
                 is_partner = True
-                is_customer = False
             elif user['user_role'] == 'customer':
-                is_admin = False
-                is_partner = False
                 is_customer = True
-            else:
-                is_admin = False
-                is_partner = False
-                is_customer = False
         except:
             pass
 
@@ -157,7 +147,7 @@ def _(page_number):
         next_page = int(page_number) + 1
         offset = (int(page_number) - 1) * x.ITEMS_PER_PAGE
 
-        if user['user_role'] == 'admin':
+        if is_logged and user['user_role'] == 'admin':
             query = """
             SELECT i.*, img.image_url 
             FROM items i 
@@ -183,9 +173,9 @@ def _(page_number):
 
         html = ""
         for item in items: 
-            html += template("_item", item=item, is_logged=is_logged, is_admin=is_admin, is_customer=is_customer)    
+            html += template("_item", item=item, is_logged=is_logged, is_customer=is_customer)    
         btn_more = template("__btn_more", page_number=next_page)
-        if len(items) < x.ITEMS_PER_PAGE: 
+        if len(items) < x.ITEMS_PER_PAGE or not is_logged: 
             btn_more = ""
         return f"""
         <template mix-target="#items" mix-bottom>
@@ -208,7 +198,12 @@ def _(page_number):
 def _():
     try:
         item_pk = x.validate_item_pk()
+        user = x.validate_user_logged()
+
+        x.validate_user_has_rights_by_item_pk(user, item_pk)
         db = x.db()
+
+
         
         # Update the item to set it as blocked
         db.execute("UPDATE items SET item_is_blocked = 1 WHERE item_pk = ?", (item_pk,))
@@ -248,6 +243,9 @@ def _():
 def _():
     try:
         item_pk = x.validate_item_pk()
+        user = x.validate_user_logged()
+
+        x.validate_user_has_rights_by_item_pk(user, item_pk)
         db = x.db()
         
         # Update the item to set it as blocked
@@ -337,7 +335,6 @@ def _():
             # Group items with their images
             items = x.group_items_with_images(rows)
 
-            items = items[:x.ITEMS_PER_PAGE]
 
             # Render a template with item information for admin
             return template("profile.html", is_logged=True, items=items, user=user, users=users, is_admin=is_admin)
@@ -394,7 +391,7 @@ def _():
         if "db" in locals(): db.close()
 
 
-##############################
+############################## 
 @put("/edit_password")
 def _():
     try:
@@ -402,8 +399,8 @@ def _():
         # Get the updated password and confirm password from the form
         user_pk = x.validate_user_pk()
         print(user_pk)
-        user_password = request.forms.get("user_password")
-        user_confirm_password = request.forms.get("user_confirm_password")
+        user_password = x.validate_user_password()
+        user_confirm_password = x.validate_user_confirm_password()
         user_updated_at = epoch.time()
 
         
@@ -485,7 +482,7 @@ def _():
 
 ############################## SIGNUP
 ##############################
-@post("/signup")
+@post("/signup")    
 def _():
     try:
         user_email = x.validate_user_email()
@@ -559,12 +556,12 @@ def _():
         if "db" in locals(): db.close()
 
 
-##############################
+############################## Should be a put, but since we cant send mixhtml in the mail it is a get
 @get("/activate_user/<id>")
 def _(id):
     try:
         db = x.db()
-        q = db.execute("UPDATE users SET user_is_verified = 1 WHERE user_pk = ?", (id,))
+        db.execute("UPDATE users SET user_is_verified = 1 WHERE user_pk = ?", (id,))
         db.commit()
         return template("activate_user.html")
     except Exception as ex:
@@ -577,18 +574,23 @@ def _(id):
 @put("/block_user")
 def _():
     try:
-        user_email = x.validate_user_email()
-        user_pk = x.validate_user_pk()
-        db = x.db()
-        q = db.execute("UPDATE users SET user_is_blocked = 1 WHERE user_pk = ?", (user_pk,))
-        db.commit()
+        user = x.validate_user_logged()
+        if user['user_role'] == "admin":
+            user_email = x.validate_user_email()
+            user_pk = x.validate_user_pk()
+            db = x.db()
+            q = db.execute("UPDATE users SET user_is_blocked = 1 WHERE user_pk = ?", (user_pk,))
+            db.commit()
 
-        x.user_blocked(x.SENDER_EMAIL, user_email, user_pk)
+            x.user_blocked(x.SENDER_EMAIL, user_email, user_pk)
 
-        return """
-        <template mix-redirect="/profile">
-        </template>
-        """
+            return """
+            <template mix-redirect="/profile">
+            </template>
+            """
+        else:
+            raise Exception("User is not an admin", 400)
+        
     except Exception as ex:
         response.status = ex.args[1]
         return ex.args[0]
@@ -599,18 +601,22 @@ def _():
 @put("/unblock_user")
 def _():
     try:
-        user_email = x.validate_user_email()
-        user_pk = x.validate_user_pk()
-        db = x.db()
-        q = db.execute("UPDATE users SET user_is_blocked = 0 WHERE user_pk = ?", (user_pk,))
-        db.commit()
+        user = x.validate_user_logged()
+        if user['user_role'] == "admin":
+            user_email = x.validate_user_email()
+            user_pk = x.validate_user_pk()
+            db = x.db()
+            q = db.execute("UPDATE users SET user_is_blocked = 0 WHERE user_pk = ?", (user_pk,))
+            db.commit()
 
-        x.user_unblocked(x.SENDER_EMAIL, user_email, user_pk)
+            x.user_unblocked(x.SENDER_EMAIL, user_email, user_pk)
         
-        return """
-        <template mix-redirect="/profile">
-        </template>
-        """
+            return """
+            <template mix-redirect="/profile">
+            </template>
+            """
+        else:
+            raise Exception("User is not an admin", 400)
     except Exception as ex:
         response.status = ex.args[1]
         return ex.args[0]
@@ -624,8 +630,6 @@ def _():
 def _():
     try:
         user_email = x.validate_user_email()
-        
-
         user_password = x.validate_user_password()
         
 
@@ -655,14 +659,11 @@ def _():
             import production #type: ignore
             is_cookie_https = True
         except:
-            is_cookie_https = False        
+            is_cookie_https = False   
+
         response.set_cookie("user", user, secret=x.COOKIE_SECRET, httponly=True, secure=is_cookie_https)
         
-        frm_login = template("__frm_login")
-        return f"""
-        <template mix-target="frm_login" mix-replace>
-            {frm_login}
-        </template>
+        return """
         <template mix-redirect="/profile">
         </template>
         """
@@ -682,18 +683,16 @@ def _():
             return f"""
             <template mix-target="#toast">
                 <div mix-ttl="3000" class="error">
-                   System under maintainance
+                System under maintainance
                 </div>
             </template>
             """
-        
-
     finally:
         if "db" in locals(): db.close()
 
 
 
-############################## TODO: SHOULD WE VALIDATE USER PK?
+############################## FORGOT PASSWORD
 @post("/forgot_password")
 def _():
     try:
@@ -728,7 +727,7 @@ def _():
 
 
 
-##############################
+############################## RESET PASSWORD
 @get("/reset_password/<id>")
 def _(id):
     try:

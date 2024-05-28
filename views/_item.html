@@ -73,11 +73,10 @@
             </button>
             <dialog id="dialog-{{item['item_pk']}}" class="rounded-lg p-4 w-[500px]">
                 <h3 class="text-2xl font-bold">Edit {{item["item_name"]}}</h3>
-
+                <p>Existing images:</p>
                 <div id="existing-images" class="flex flex-wrap gap-2">
                     % for image_url in item['item_images']:
                     <div class="flex flex-col">
-                        <p>Existing images:</p>
                         <div class="flex relative">
                             <form id="delete_item_{{item['item_pk']}}">
                                 <button class="absolute top-2 right-2 max-w-7 max-h-7"

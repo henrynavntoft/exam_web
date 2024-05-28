@@ -75,9 +75,6 @@ CREATE TABLE items(
     PRIMARY KEY(item_pk)
 ) WITHOUT ROWID;
 
-INSERT INTO items VALUES
-("5dbce622fa2b4f22a6f6957d07ff4951", "Christiansborg Palace", "", "5dbce622fa2b4f22a6f6957d07ff4951.webp", 55.6761, 12.5770, 5, 2541, 1, 0, 0, 0, 0, "5dbce622fa2b4f22a6f6957d07ff4951"),
-("5dbce622fa2b4f22a6f6957d07ff4952", "Tivoli Gardens", "", "5dbce622fa2b4f22a6f6957d07ff4952.webp", 55.6736, 12.5681, 4.97, 985, 2, 0, 0, 0, 0, "5dbce622fa2b4f22a6f6957d07ff4952");
 
 SELECT * FROM items;
 
@@ -102,7 +99,9 @@ SELECT * FROM item_images;
 
 
 
-
+INSERT INTO items VALUES
+("5dbce622fa2b4f22a6f6957d07ff4951", "Christiansborg Palace", "", "5dbce622fa2b4f22a6f6957d07ff4951.webp", 55.6761, 12.5770, 5, 2541, 1, 0, 0, 0, 0, "5dbce622fa2b4f22a6f6957d07ff4951"),
+("5dbce622fa2b4f22a6f6957d07ff4952", "Tivoli Gardens", "", "5dbce622fa2b4f22a6f6957d07ff4952.webp", 55.6736, 12.5681, 4.97, 985, 2, 0, 0, 0, 0, "5dbce622fa2b4f22a6f6957d07ff4952");
 
 
 SELECT * FROM users WHERE user_email = "henrylnavntoft@gmail.com" LIMIT 1
