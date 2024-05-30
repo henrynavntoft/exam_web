@@ -91,7 +91,7 @@ def _():
             is_logged = True
             if user['user_role'] == 'customer':
                 is_customer = True
-        except:
+        except x.Unauthorized:
             pass
 
         query = """
@@ -115,8 +115,7 @@ def _():
                         is_logged=is_logged, is_customer=is_customer)
     
     except Exception as ex:
-        print(ex)
-        return ex
+         return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
 
@@ -127,20 +126,14 @@ def _():
 def _(page_number):
     try:
         is_logged = False
-        is_admin = False
-        is_partner = False
         is_customer = False
         
         try:
             user = x.validate_user_logged()
             is_logged = True
-            if user['user_role'] == 'admin':
-                is_admin = True
-            elif user['user_role'] == 'partner':
-                is_partner = True
-            elif user['user_role'] == 'customer':
+            if user['user_role'] == 'customer':
                 is_customer = True
-        except:
+        except x.Unauthorized:
             pass
 
         db = x.db()
@@ -187,8 +180,7 @@ def _(page_number):
         <template mix-function="mapPins">{json.dumps(items)}</template>
         """
     except Exception as ex:
-        print(ex)
-        return "ups..."
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
 
@@ -232,8 +224,7 @@ def _():
         </template>
         """
     except Exception as ex:
-        response.status = ex.args[1]
-        return ex.args[0]
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
 
@@ -276,8 +267,7 @@ def _():
         </template>
         """
     except Exception as ex:
-        response.status = ex.args[1]
-        return ex.args[0]
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
 
@@ -339,7 +329,7 @@ def _():
             # Render a template with item information for admin
             return template("profile.html", is_logged=True, items=items, user=user, users=users, is_admin=is_admin)
    
-   
+   ## TODO: NEED TO MAKE REDIRECT WORK IN MY EXCEPTIONS
     except Exception as ex:
         response.status = 303
         response.set_header('Location', '/login')
@@ -798,7 +788,7 @@ def _():
     try:
         user = x.validate_user_logged()
         if user['user_role'] != "partner":
-            raise Exception("User is not a partner", 400)
+            raise x.Forbidden("User is not a partner")
         else:
 
             # User
@@ -849,29 +839,11 @@ def _():
             """
 
     except Exception as ex:
-        try:
-            response.status = ex.args[1]
-            return f"""
-            <template mix-target="#toast">
-                <div mix-ttl="3000" class="error">
-                    {ex.args[0]}
-                </div>
-            </template>
-            """
-        except Exception as ex:
-            print(ex)
-            response.status = 500
-            return f"""
-            <template mix-target="#toast">
-                <div mix-ttl="3000" class="error">
-                   System under maintainance
-                </div>
-            </template>
-            """
+        return x.handle_exception(ex)
 
+    
     finally:
         if "db" in locals(): db.close()
-
 
 
 

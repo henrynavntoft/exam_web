@@ -24,7 +24,7 @@ class HTTPException(Exception):
         super().__init__(self.full_message)
         self.status_code = status_code
     def __str__(self):
-        return f"HTTP {self.status_code} - {self.full_message}"
+        return f"{self.status_code} - {self.full_message}"
 
 class BadRequest(HTTPException):
     def __init__(self, custom_message=None):
@@ -45,6 +45,45 @@ class NotFound(HTTPException):
 class InternalServerError(HTTPException):
     def __init__(self, custom_message=None):
         super().__init__("Internal server error", 500, custom_message)
+
+class RedirectException(HTTPException):
+    def __init__(self, location, custom_message=None):
+        super().__init__(custom_message or "Redirect", 303)
+        self.location = location
+
+###########################################################################################
+def handle_exception(ex):
+    if isinstance(ex, BadRequest):
+        response.status = ex.status_code
+        message = str(ex)
+    elif isinstance(ex, Unauthorized):
+        response.status = ex.status_code
+        message = str(ex)
+    elif isinstance(ex, Forbidden):
+        response.status = ex.status_code
+        message = str(ex)
+    elif isinstance(ex, NotFound):
+        response.status = ex.status_code
+        message = str(ex)
+    elif isinstance(ex, InternalServerError):
+        response.status = ex.status_code
+        message = str(ex)
+    elif isinstance(ex, RedirectException):
+        response.status = ex.status_code
+        response.set_header('Location', ex.location)
+        return ""
+    else:
+        response.status = 500
+        message = "System under maintenance"
+        print(ex)  # Log the unexpected exception for debugging
+
+    return f"""
+    <template mix-target="#toast">
+        <div mix-ttl="3000" class="error">
+            {message}
+        </div>
+    </template>
+    """
 
 ###########################################################################################
 # SQLite database connection
@@ -102,7 +141,7 @@ def validate_user_has_rights_to_item(user, item_pk):
 
 
 ########################################################################################### USER VALIDATION
-##############################
+############################## USER_PK VALIDATION
 
 USER_PK_LEN = 32
 USER_PK_REGEX = "^[a-f0-9]{32}$"
@@ -113,8 +152,8 @@ def validate_user_pk():
         raise BadRequest("user_pk invalid")
     return user_pk
 
-
-##############################
+ 
+############################## USER_EMAIL VALIDATION
 
 EMAIL_MAX = 100
 EMAIL_REGEX = "^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$"
@@ -127,7 +166,7 @@ def validate_user_email():
         raise BadRequest(f"email must be less than {EMAIL_MAX} characters")
     return user_email
 
-##############################
+############################## USER_USERNAME VALIDATION
 
 USER_USERNAME_MIN = 2
 USER_USERNAME_MAX = 20
@@ -139,58 +178,58 @@ def validate_user_username():
         raise BadRequest(f"username must be between {USER_USERNAME_MIN} and {USER_USERNAME_MAX} characters, and contain only letters")
     return user_username
 
-##############################
+############################## USER_FIRST_NAME VALIDATION
 
 FIRST_NAME_MIN = 2
 FIRST_NAME_MAX = 20
 
 def validate_user_first_name():
-    error = f"name {FIRST_NAME_MIN} to {FIRST_NAME_MAX} characters"
     user_first_name = request.forms.get("user_first_name", "").strip()
-    if not re.match(USER_USERNAME_REGEX, user_first_name): raise Exception(error, 400)
+    if not re.match(USER_USERNAME_REGEX, user_first_name):
+        raise BadRequest(f"First name must be between {FIRST_NAME_MIN} and {FIRST_NAME_MAX} characters, and contain only letters.")
     return user_first_name
 
-##############################
+
+############################## USER_LAST_NAME VALIDATION
 
 LAST_NAME_MIN = 2
 LAST_NAME_MAX = 20
 
 def validate_user_last_name():
-  error = f"last_name {LAST_NAME_MIN} to {LAST_NAME_MAX} characters"
-  user_last_name = request.forms.get("user_last_name", "").strip()
-  if not re.match(USER_USERNAME_REGEX, user_last_name): raise Exception(error, 400)
-  return user_last_name
+    user_last_name = request.forms.get("user_last_name", "").strip()
+    if not re.match(USER_USERNAME_REGEX, user_last_name):
+        raise BadRequest(f"Last name must be between {LAST_NAME_MIN} and {LAST_NAME_MAX} characters, and contain only letters.")
+    return user_last_name
 
-##############################
+############################## USER_PASSWORD VALIDATION
 USER_PASSWORD_MIN = 6
 USER_PASSWORD_MAX = 50
 USER_PASSWORD_REGEX = "^.{6,50}$"
 
 def validate_user_password():
-    error = f"password {USER_PASSWORD_MIN} to {USER_PASSWORD_MAX} characters"
     user_password = request.forms.get("user_password", "").strip()
-    if not re.match(USER_PASSWORD_REGEX, user_password): raise Exception(error, 400)
+    if not re.match(USER_PASSWORD_REGEX, user_password):
+        raise BadRequest(f"Password must be between {USER_PASSWORD_MIN} and {USER_PASSWORD_MAX} characters.")
     return user_password
 
-##############################
+############################## USER_CONFIRM_PASSWORD VALIDATION
 
 def validate_user_confirm_password():
-  error = f"password and confirm_password do not match"
-  user_password = request.forms.get("user_password", "").strip()
-  user_confirm_password = request.forms.get("user_confirm_password", "").strip()
-  if user_password != user_confirm_password: raise Exception(error, 400)
-  return user_confirm_password
+    user_password = request.forms.get("user_password", "").strip()
+    user_confirm_password = request.forms.get("user_confirm_password", "").strip()
+    if user_password != user_confirm_password:
+        raise BadRequest("Password and confirm password do not match.")
+    return user_confirm_password
 
 
-##############################
+############################## USER_ROLE VALIDATION
 CUSTOMER_ROLE = "customer"
 PARTNER_ROLE = "partner"
 
 def validate_user_role():
     user_role = request.forms.get("user_role", "").strip()
-    error = f"The role ###{user_role}### is neither {CUSTOMER_ROLE} or {PARTNER_ROLE}"
     if user_role != CUSTOMER_ROLE and user_role != PARTNER_ROLE:
-        raise Exception(error, 400)
+        raise BadRequest(f"The role '{user_role}' is neither '{CUSTOMER_ROLE}' nor '{PARTNER_ROLE}'")
     return user_role
 
 
@@ -201,10 +240,10 @@ ITEM_PK_LEN = 32
 ITEM_PK_REGEX = "^[a-f0-9]{32}$"
 
 def validate_item_pk():
-	error = f"item pk invalid"
-	item_pk = request.forms.get("item_pk", "").strip()      
-	if not re.match(ITEM_PK_REGEX, item_pk): raise Exception(error, 400)
-	return item_pk
+    item_pk = request.forms.get("item_pk", "").strip()
+    if not re.match(ITEM_PK_REGEX, item_pk):
+        raise BadRequest("Item pk invalid")
+    return item_pk
 
 ############################## ITEM_NAME VALIDATION
 ITEM_NAME_MIN = 6
@@ -212,10 +251,10 @@ ITEM_NAME_MAX = 50
 ITEM_NAME_REGEX = "^.{6,50}$"
 
 def validate_item_name():
-  error = f"Property name {ITEM_NAME_MIN} to {ITEM_NAME_MAX} characters"
-  item_name = request.forms.get("item_name", "").strip()
-  if not re.match(ITEM_NAME_REGEX, item_name): raise Exception(error, 400)
-  return item_name
+    item_name = request.forms.get("item_name", "").strip()
+    if not re.match(ITEM_NAME_REGEX, item_name):
+        raise BadRequest(f"Property name must be between {ITEM_NAME_MIN} and {ITEM_NAME_MAX} characters.")
+    return item_name
 
 ############################## ITEM_PRICE VALIDATION
 ITEM_PRICE_MIN = 1
@@ -223,10 +262,10 @@ ITEM_PRICE_MAX = 99999999
 ITEM_PRICE_REGEX = "^\d{1,8}(\.\d{1,2})?$" 
 
 def validate_item_price_per_night():
-  error = f"Price must be between {ITEM_PRICE_MIN} and {ITEM_PRICE_MAX} digits"
-  item_price_per_night = request.forms.get("item_price_per_night", "").strip()
-  if not re.match(ITEM_PRICE_REGEX, item_price_per_night): raise Exception(error, 400)
-  return item_price_per_night
+    item_price_per_night = request.forms.get("item_price_per_night", "").strip()
+    if not re.match(ITEM_PRICE_REGEX, item_price_per_night):
+        raise BadRequest(f"Price must be a number between {ITEM_PRICE_MIN} and {ITEM_PRICE_MAX} digits.")
+    return item_price_per_night
 
 ############################## ITEM_DESCRIPTION VALIDATION
 ITEM_DESCRIPTION_MIN = 6
@@ -234,44 +273,46 @@ ITEM_DESCRIPTION_MAX = 200
 ITEM_DESCRIPTION_REGEX = "^.{6,200}$"
 
 def validate_item_description():
-  error = f"Description {ITEM_DESCRIPTION_MIN} to {ITEM_DESCRIPTION_MAX} characters"
-  item_description = request.forms.get("item_description", "").strip()
-  if not re.match(ITEM_DESCRIPTION_REGEX, item_description): raise Exception(error, 400)
-  return item_description
+    item_description = request.forms.get("item_description", "").strip()
+    if not re.match(ITEM_DESCRIPTION_REGEX, item_description):
+        raise BadRequest(f"Description must be between {ITEM_DESCRIPTION_MIN} and {ITEM_DESCRIPTION_MAX} characters.")
+    return item_description
 
-############################## ITEM_IMAGES VALIDATION
+############################## ITEM_IMAGES VALIDATION 
+# NOTE: When 0 images are uploaded it checks for file extenstion and shold check for number of images. So behavior is slightly wrong but works.
 ITEM_IMAGES_MIN = 1
 ITEM_IMAGES_MAX = 5
 ITEM_IMAGE_MAX_SIZE = 1024 * 1024 * 5  # 5MB
 
 def validate_item_images():
-    try:
-        item_images = request.files.getall("item_images")
+    item_images = request.files.getall("item_images")
 
-        # If no images are provided, return an empty list
-        if not item_images:
-            return []
+    # Ensure that the number of images is within the allowed range
+    if not item_images:
+        raise BadRequest(f"No images uploaded. Must upload between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX} images.")
+    
+    if len(item_images) < ITEM_IMAGES_MIN or len(item_images) > ITEM_IMAGES_MAX:
+        raise BadRequest(f"Invalid number of images, must be between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX}")
 
-        if len(item_images) < ITEM_IMAGES_MIN or len(item_images) > ITEM_IMAGES_MAX:
-            raise Exception(f"Invalid number of images, must be between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX}", 400)
+    allowed_extensions = {'.png', '.jpg', '.jpeg', '.webp'}
+    for image in item_images:
+        # Check if the filename is empty
+        if not image.filename:
+            raise BadRequest("Image file name is empty")
+        
+        # Check the image extension
+        if pathlib.Path(image.filename).suffix.lower() not in allowed_extensions:
+            raise BadRequest("Invalid image extension")
 
-        allowed_extensions = ['.png', '.jpg', '.jpeg', '.webp']
-        for image in item_images:
-            if pathlib.Path(image.filename).suffix.lower() not in allowed_extensions:
-                raise Exception("Invalid image extension", 400)
+        # Read the file into memory and check its size
+        file_in_memory = BytesIO(image.file.read())
+        if len(file_in_memory.getvalue()) > ITEM_IMAGE_MAX_SIZE:
+            raise BadRequest("Image size exceeds the maximum allowed size of 5MB")
 
-            # Read the file into memory and check its size
-            file_in_memory = BytesIO(image.file.read())
-            if len(file_in_memory.getvalue()) > ITEM_IMAGE_MAX_SIZE:
-                raise Exception("Image size exceeds the maximum allowed size of 5MB", 400)
+        # Go back to the start of the file for further operations
+        image.file.seek(0)
 
-            # Go back to the start of the file for further operations
-            image.file.seek(0)
-
-        return item_images
-    except Exception as ex:
-        print(ex)
-        raise 
+    return item_images
 
 
 ########################################################################################### EMAILS
@@ -436,7 +477,7 @@ def user_blocked(from_email, to_email, user_pk):
         message["From"] = to_email
         message["Subject"] = 'Your profile has been blocked'
         email_body= f""" 
-                       <!DOCTYPE html>
+                    <!DOCTYPE html>
 <html lang="en">
 
 <head>
