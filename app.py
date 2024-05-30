@@ -200,7 +200,7 @@ def _():
         item_pk = x.validate_item_pk()
         user = x.validate_user_logged()
 
-        x.validate_user_has_rights_by_item_pk(user, item_pk)
+        x.validate_user_has_rights_to_item(user, item_pk)
         db = x.db()
 
 
@@ -245,7 +245,7 @@ def _():
         item_pk = x.validate_item_pk()
         user = x.validate_user_logged()
 
-        x.validate_user_has_rights_by_item_pk(user, item_pk)
+        x.validate_user_has_rights_to_item(user, item_pk)
         db = x.db()
         
         # Update the item to set it as blocked
@@ -881,9 +881,7 @@ def _(item_pk):
     try:
         user = x.validate_user_logged()
 
-        x.validate_user_has_rights_by_item_pk(user, item_pk)
-
-        print(item_pk)
+        x.validate_user_has_rights_to_item(user, item_pk)
 
         db = x.db()
 

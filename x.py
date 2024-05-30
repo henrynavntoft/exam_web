@@ -1,5 +1,5 @@
 import pathlib
-from bottle import request, response, template
+from bottle import request, response
 import re
 import sqlite3
 from email.mime.multipart import MIMEMultipart
@@ -11,6 +11,43 @@ from io import BytesIO
 ITEMS_PER_PAGE = 2
 COOKIE_SECRET = "41ebeca46f3b-4d77-a8e2-554659075C6319a2fbfb-9a2D-4fb6-Afcad32abb26a5e0"
 
+############################################################################################
+# Custom exceptions
+
+class HTTPException(Exception):
+    def __init__(self, default_message, status_code, custom_message=None):
+        # Combine the default message and the custom message if provided
+        if custom_message:
+            self.full_message = f"{default_message}: {custom_message}"
+        else:
+            self.full_message = default_message
+        super().__init__(self.full_message)
+        self.status_code = status_code
+    def __str__(self):
+        return f"HTTP {self.status_code} - {self.full_message}"
+
+class BadRequest(HTTPException):
+    def __init__(self, custom_message=None):
+        super().__init__("Bad request", 400, custom_message)
+
+class Unauthorized(HTTPException):
+    def __init__(self, custom_message=None):
+        super().__init__("Unauthorized", 401, custom_message)
+
+class Forbidden(HTTPException):
+    def __init__(self, custom_message=None):
+        super().__init__("Forbidden", 403, custom_message)
+
+class NotFound(HTTPException):
+    def __init__(self, custom_message=None):
+        super().__init__("Not found", 404, custom_message)
+
+class InternalServerError(HTTPException):
+    def __init__(self, custom_message=None):
+        super().__init__("Internal server error", 500, custom_message)
+
+###########################################################################################
+# SQLite database connection
 
 ##############################
 def dict_factory(cursor, row):
@@ -18,12 +55,17 @@ def dict_factory(cursor, row):
     return {key: value for key, value in zip(col_names, row)}
 
 ##############################
-
 def db():
-    db = sqlite3.connect(str(pathlib.Path(__file__).parent.resolve())+"/company.db")  
-    db.row_factory = dict_factory
-    return db
+    try:
+        db = sqlite3.connect(str(pathlib.Path(__file__).parent.resolve())+"/company.db")  
+        db.row_factory = dict_factory
+        return db
+    except Exception as ex:
+        raise InternalServerError(str(ex))
 
+
+###########################################################################################
+# Utility functions
 
 ##############################
 def no_cache():
@@ -35,37 +77,41 @@ def no_cache():
 ##############################
 def validate_user_logged():
     user = request.get_cookie("user", secret=COOKIE_SECRET)
-    if user is None: raise Exception("user must login", 400)
+    if user is None: 
+        raise Unauthorized("You must be logged in to do that")
     return user
 
 
 ############################## 
+def validate_user_has_rights_to_item(user, item_pk):
+    try:
+        database = db()
+        q = database.execute("SELECT * FROM items WHERE item_pk = ?", (item_pk,))
+        item = q.fetchone()
 
-def validate_user_has_rights_by_item_pk(user, item_pk):
-    database = db()
-    q = database.execute("SELECT * FROM items WHERE item_pk = ?", (item_pk,))
-    item = q.fetchone()
-
-    if user['user_pk'] == item['item_owner_fk'] or user['user_role'] == 'admin':
-        return True
-    else:
-        raise Exception("You do not have the rights to do that", 400)
+        if user['user_pk'] == item['item_owner_fk'] or user['user_role'] == 'admin':
+            return True
+        else:
+            raise Forbidden("You do not have the rights to do that")
+    except sqlite3.Error as e:
+            raise InternalServerError(f"Database error: {e}")
+    except HTTPException as e:
+            raise e
+    except Exception as e:
+            raise BadRequest(str(e))
 
 
 ########################################################################################### USER VALIDATION
-
-
-
-############################## TODO: WE NEED TO VALIDATE IDS/PKS
+##############################
 
 USER_PK_LEN = 32
 USER_PK_REGEX = "^[a-f0-9]{32}$"
 
 def validate_user_pk():
-	error = f"user_pk invalid"
-	user_pk = request.forms.get("user_pk", "").strip()      
-	if not re.match(USER_PK_REGEX, user_pk): raise Exception(error, 400)
-	return user_pk
+    user_pk = request.forms.get("user_pk", "").strip()
+    if not re.match(USER_PK_REGEX, user_pk):
+        raise BadRequest("user_pk invalid")
+    return user_pk
 
 
 ##############################
@@ -74,9 +120,11 @@ EMAIL_MAX = 100
 EMAIL_REGEX = "^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$"
 
 def validate_user_email():
-    error = f"email invalid"
     user_email = request.forms.get("user_email", "").strip()
-    if not re.match(EMAIL_REGEX, user_email): raise Exception(error, 400)
+    if not re.match(EMAIL_REGEX, user_email):
+        raise BadRequest("email invalid")
+    if len(user_email) > EMAIL_MAX:
+        raise BadRequest(f"email must be less than {EMAIL_MAX} characters")
     return user_email
 
 ##############################
@@ -86,9 +134,9 @@ USER_USERNAME_MAX = 20
 USER_USERNAME_REGEX = "^[a-zA-Z]{2,20}$"
 
 def validate_user_username():
-    error = f"username {USER_USERNAME_MIN} to {USER_USERNAME_MAX} lowercase english letters"
     user_username = request.forms.get("user_username", "").strip()
-    if not re.match(USER_USERNAME_REGEX, user_username): raise Exception(error, 400)
+    if not re.match(USER_USERNAME_REGEX, user_username):
+        raise BadRequest(f"username must be between {USER_USERNAME_MIN} and {USER_USERNAME_MAX} characters, and contain only letters")
     return user_username
 
 ##############################
@@ -146,11 +194,9 @@ def validate_user_role():
     return user_role
 
 
-########################################################################################### ITEMS/PROPERTIES VALIDATION
+########################################################################################### ITEM VALIDATION
 
-
-#TODO: finsih validation
-############################## 
+############################## ITEM_PK VALIDATION
 ITEM_PK_LEN = 32
 ITEM_PK_REGEX = "^[a-f0-9]{32}$"
 
@@ -160,11 +206,7 @@ def validate_item_pk():
 	if not re.match(ITEM_PK_REGEX, item_pk): raise Exception(error, 400)
 	return item_pk
 
-
-
-
-
-##############################
+############################## ITEM_NAME VALIDATION
 ITEM_NAME_MIN = 6
 ITEM_NAME_MAX = 50
 ITEM_NAME_REGEX = "^.{6,50}$"
@@ -175,7 +217,7 @@ def validate_item_name():
   if not re.match(ITEM_NAME_REGEX, item_name): raise Exception(error, 400)
   return item_name
 
-##############################
+############################## ITEM_PRICE VALIDATION
 ITEM_PRICE_MIN = 1
 ITEM_PRICE_MAX = 99999999
 ITEM_PRICE_REGEX = "^\d{1,8}(\.\d{1,2})?$" 
@@ -186,7 +228,7 @@ def validate_item_price_per_night():
   if not re.match(ITEM_PRICE_REGEX, item_price_per_night): raise Exception(error, 400)
   return item_price_per_night
 
-##############################
+############################## ITEM_DESCRIPTION VALIDATION
 ITEM_DESCRIPTION_MIN = 6
 ITEM_DESCRIPTION_MAX = 200
 ITEM_DESCRIPTION_REGEX = "^.{6,200}$"
@@ -197,7 +239,7 @@ def validate_item_description():
   if not re.match(ITEM_DESCRIPTION_REGEX, item_description): raise Exception(error, 400)
   return item_description
 
-##############################
+############################## ITEM_IMAGES VALIDATION
 ITEM_IMAGES_MIN = 1
 ITEM_IMAGES_MAX = 5
 ITEM_IMAGE_MAX_SIZE = 1024 * 1024 * 5  # 5MB
@@ -236,7 +278,7 @@ def validate_item_images():
 
 SENDER_EMAIL = "henrylnavntoft@gmail.com"
 
-##############################
+############################## VERIFY USER EMAIL
 def send_verification_email(from_email, to_email, verification_id):
     try:
 
@@ -291,7 +333,7 @@ def send_verification_email(from_email, to_email, verification_id):
     
 
 
-##############################
+############################## RESET PASSWORD EMAIL
 def send_password_reset_email(from_email, to_email, user_pk):
     try:
         message = MIMEMultipart()
@@ -343,7 +385,7 @@ def send_password_reset_email(from_email, to_email, user_pk):
     
 
 
-##############################
+############################## CONFIRM DELETE EMAIL
 def send_confirm_delete(from_email, to_email, user_pk):
     try:
         message = MIMEMultipart()
@@ -386,7 +428,7 @@ def send_confirm_delete(from_email, to_email, user_pk):
         return "error"
 
 
-##############################
+############################## USER BLOCKED EMAIL
 def user_blocked(from_email, to_email, user_pk):
     try:
         message = MIMEMultipart()
@@ -427,7 +469,9 @@ def user_blocked(from_email, to_email, user_pk):
         print(ex)
         return "error"
     
-##############################
+
+
+############################## USER UNBLOCKED EMAIL
 def user_unblocked(from_email, to_email, user_pk):
     try:
         message = MIMEMultipart()
@@ -468,7 +512,7 @@ def user_unblocked(from_email, to_email, user_pk):
         print(ex)
         return "error"
 
-##############################
+############################## ITEM BLOCKED EMAIL
 def item_blocked (from_email, to_email, item_pk):
     try:
         message = MIMEMultipart()
@@ -511,7 +555,7 @@ def item_blocked (from_email, to_email, item_pk):
 
 
 
-##############################
+############################## ITEM UNBLOCKED EMAIL
 def item_unblocked (from_email, to_email, item_pk):
     try:
         message = MIMEMultipart()
@@ -556,6 +600,7 @@ def item_unblocked (from_email, to_email, item_pk):
 
 ###########################################################################################
 
+############################## GROUP ITEMS WITH IMAGES
 def group_items_with_images(rows):
     items = {}
     for row in rows:
@@ -583,8 +628,10 @@ def group_items_with_images(rows):
     return list(items.values())
 
 
+
+
 ###########################################################################################
-## ARANGODB
+## ARANGODB CONNECTION
 
 def db_arango(query):
     try:
