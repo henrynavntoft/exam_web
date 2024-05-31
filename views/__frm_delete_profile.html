@@ -4,21 +4,17 @@
 
     <input type="text" hidden name="user_pk" id="user_pk" value="{{user['user_pk']}}">
 
-
     <div>
         <label for="user_password">Password:</label>
         <input name="user_password" id="user_password" class="w-full border" type="password" placeholder="" value=""
             mix-check="{{x.USER_PASSWORD_REGEX}}">
     </div>
 
-
-
     <div>
         <label for="user_confirm_password">Confirm Password:</label>
         <input name="user_confirm_password" id="user_confirm_password" class="w-full border" type="password"
             placeholder="" value="" mix-check="{{x.USER_PASSWORD_REGEX}}">
     </div>
-
 
     <button class="" mix-data="#frm_delete_profile" mix-put="/delete_profile" mix-default="Delete profile"
         mix-await="Please wait ...">

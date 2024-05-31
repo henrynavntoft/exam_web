@@ -2,6 +2,7 @@
 
 <form id="frm_edit" class="flex flex-col gap-2">
 
+
     <div>
         <label for="user_username">Username:</label>
         <input id="user_username" name="user_username" class="w-full border" type="username" placeholder=""
@@ -21,8 +22,7 @@
             value="{{user['user_last_name']}}" mix-check="{{x.USER_USERNAME_REGEX}}">
     </div>
 
-    <button class="" mix-data="#frm_edit" mix-put="/edit_profile" mix-default="Save profile edits"
-        mix-await="Please wait ...">
+    <button mix-data="#frm_edit" mix-put="/edit_profile" mix-default="Save profile edits" mix-await="Please wait ...">
         Save profile edits
     </button>
 </form>

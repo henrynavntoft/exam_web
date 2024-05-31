@@ -33,11 +33,6 @@
         </span>
 
 
-        <!--Why is it saying "," expected -->
-
-
-
-
         % if get("is_logged", False) and get("is_admin", False):
         <section class="flex gap-2">
             <form id="{{item['item_pk']}}">
@@ -152,7 +147,6 @@
 </div>
 
 
-<!-- IS THIS OKAY TO HAVE?? -->
 <script>
     document.addEventListener('DOMContentLoaded', function () {
         document.querySelectorAll('.open-dialog').forEach(button => {

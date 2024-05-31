@@ -13,26 +13,27 @@
             <p>User is verified: {{user["user_is_verified"]}}</p>
         </div>
         <div>
-            <p>User is blocked: {{user["user_is_blocked"] if user = 1}}</p>
+            <p>User is blocked: {{user["user_is_blocked"]}} </p>
         </div>
-
-
-
-        <form id="{{user['user_pk']}}">
-            <input name="user_pk" hidden type="text" value="{{user['user_pk']}}">
-            <input name="user_email" hidden type="text" value="{{user['user_email']}}">
-            % if user['user_is_blocked'] == 0:
-            <button mix-data="[id='{{user['user_pk']}}']" mix-put="/block_user">
-                Block
-            </button>
-            % else:
-            <button mix-data="[id='{{user['user_pk']}}']" mix-put="/unblock_user">
-                Unblock
-            </button>
-            % end
-        </form>
-
-
     </div>
+
+
+
+    <form id="{{user['user_pk']}}">
+        <input name="user_pk" hidden type="text" value="{{user['user_pk']}}">
+        <input name="user_email" hidden type="text" value="{{user['user_email']}}">
+        % if user['user_is_blocked'] == 0:
+        <button mix-data="[id='{{user['user_pk']}}']" mix-put="/block_user">
+            Block
+        </button>
+        % else:
+        <button mix-data="[id='{{user['user_pk']}}']" mix-put="/unblock_user">
+            Unblock
+        </button>
+        % end
+    </form>
+
+
+</div>
 
 </div>

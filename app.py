@@ -120,7 +120,7 @@ def _():
         if "db" in locals(): db.close()
 
 
-############################## GET ITEMS
+############################## GET MORE ITEMS
 ############################## 
 @get("/items/page/<page_number>")
 def _(page_number):
@@ -185,94 +185,8 @@ def _(page_number):
         if "db" in locals(): db.close()
 
 
-##############################
-@put("/block_item")
-def _():
-    try:
-        item_pk = x.validate_item_pk()
-        user = x.validate_user_logged()
-
-        x.validate_user_has_rights_to_item(user, item_pk)
-        db = x.db()
-
-
-        
-        # Update the item to set it as blocked
-        db.execute("UPDATE items SET item_is_blocked = 1 WHERE item_pk = ?", (item_pk,))
-        
-        # Retrieve the owner's email directly from the users table using the item_owner field from the items table
-        query = """
-        SELECT u.user_email 
-        FROM users u 
-        JOIN items i ON u.user_pk = i.item_owner_fk 
-        WHERE i.item_pk = ?
-        """
-        q = db.execute(query, (item_pk,))
-        user_info = q.fetchone()
-        
-        if not user_info:
-            raise Exception("User not found", 404)
-        
-        user_email = user_info['user_email']
-        
-        db.commit()
-
-        x.item_blocked(x.SENDER_EMAIL, user_email, item_pk)
-
-        return """
-        <template mix-redirect="/profile">
-        </template>
-        """
-    except Exception as ex:
-        return x.handle_exception(ex)
-    finally:
-        if "db" in locals(): db.close()
-
-
-##############################
-@put("/unblock_item")
-def _():
-    try:
-        item_pk = x.validate_item_pk()
-        user = x.validate_user_logged()
-
-        x.validate_user_has_rights_to_item(user, item_pk)
-        db = x.db()
-        
-        # Update the item to set it as blocked
-        db.execute("UPDATE items SET item_is_blocked = 0 WHERE item_pk = ?", (item_pk,))
-        
-        # Retrieve the owner's email directly from the users table using the item_owner field from the items table
-        query = """
-        SELECT u.user_email 
-        FROM users u 
-        JOIN items i ON u.user_pk = i.item_owner_fk 
-        WHERE i.item_pk = ?
-        """
-        q = db.execute(query, (item_pk,))
-        user_info = q.fetchone()
-        
-        if not user_info:
-            raise Exception("User not found", 404)
-        
-        user_email = user_info['user_email']
-        
-        db.commit()
-
-        db.commit()
-
-        x.item_unblocked(x.SENDER_EMAIL, user_email, item_pk)   
-        return """
-        <template mix-redirect="/profile">
-        </template>
-        """
-    except Exception as ex:
-        return x.handle_exception(ex)
-    finally:
-        if "db" in locals(): db.close()
-
-############################## PROFILE
-##############################
+########################################################### PROFILE
+############################## GET PROFILE
 @get("/profile")
 def _():
     try:
@@ -329,35 +243,35 @@ def _():
             # Render a template with item information for admin
             return template("profile.html", is_logged=True, items=items, user=user, users=users, is_admin=is_admin)
    
-   ## TODO: NEED TO MAKE REDIRECT WORK IN MY EXCEPTIONS
-    except Exception as ex:
+    except x.Unauthorized as ex:
         response.status = 303
         response.set_header('Location', '/login')
         return
+    except Exception as ex:
+        return x.handle_exception(ex)
     finally:
         if "db" in locals():
             db.close()
 
-##############################
+############################## EDIT PROFILE
 @put("/edit_profile")
 def _():
     try:
         user = x.validate_user_logged()
         
-        # Get the updated user information from the form
         user_username = x.validate_user_username()
         user_first_name = x.validate_user_first_name()
         user_last_name = x.validate_user_last_name()
         user_updated_at = epoch.time()
         
         db = x.db()
-        q = db.execute("UPDATE users SET user_username = ?, user_first_name = ?, user_last_name = ?, user_updated_at = ? WHERE user_pk = ?", (user_username, user_first_name, user_last_name, user_updated_at, user["user_pk"]))
+        
+        db.execute("UPDATE users SET user_username = ?, user_first_name = ?, user_last_name = ?, user_updated_at = ? WHERE user_pk = ?", (user_username, user_first_name, user_last_name, user_updated_at, user["user_pk"]))
+        
         db.commit()
-
 
         # Spread the user and update the user information
         updated_user = {**user, "user_username": user_username, "user_first_name": user_first_name, "user_last_name": user_last_name, "user_updated_at": user_updated_at}
-
 
         try:
             import production #type: ignore
@@ -366,38 +280,33 @@ def _():
             is_cookie_https = False
 
         response.set_cookie("user", updated_user, secret=x.COOKIE_SECRET, httponly=True, secure=is_cookie_https, path='/')
-        
-        # Forced redirect after successful update
+
         return """
         <template mix-redirect="/profile">
         </template>
-        """
-        
+        """   
+    except x.Unauthorized as ex:
+        response.status = 303
+        response.set_header('Location', '/login')
+        return
     except Exception as ex:
-        print(ex)
-        response.status = 303 
-        response.set_header('Location', '/profile')
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
 
 
-############################## 
+##############################  EDIT PASSWORD
 @put("/edit_password")
 def _():
     try:
+        user = x.validate_user_logged()
 
         # Get the updated password and confirm password from the form
         user_pk = x.validate_user_pk()
-        print(user_pk)
         user_password = x.validate_user_password()
-        user_confirm_password = x.validate_user_confirm_password()
+        x.validate_user_confirm_password()
         user_updated_at = epoch.time()
 
-        
-        # Check if the new password and confirm password match
-        if user_password != user_confirm_password:
-            response.status = 400
-            return "New password and confirm password do not match"
         
          # this makes user_password into a byte string
         password = user_password.encode() 
@@ -417,27 +326,26 @@ def _():
         hashed_str = hashed.decode('utf-8')
         
         db = x.db()
-        q = db.execute("UPDATE users SET user_password = ?, user_updated_at = ? WHERE user_pk = ?", (hashed_str, user_updated_at, user_pk))
+        db.execute("UPDATE users SET user_password = ?, user_updated_at = ? WHERE user_pk = ?", (hashed_str, user_updated_at, user_pk))
         db.commit()
         
         response.delete_cookie("user")
-        return f"""
+        
 
+        return f"""
             <template mix-target="#frm_edit_password" mix-replace>
             <div>
                 <h1> Your password has been changed </h1>
                 <a class="text-blue-600 underline" href="/login"> Click here to login </a>
             </div>
-             </template>
-
+            </template>
             """
 
     except Exception as ex:
-        response.status = 500
-        return str(ex)
+        return x.handle_exception(ex)
+    
     finally:
-        if "db" in locals():
-            db.close()
+        if "db" in locals(): db.close()
 
 
 ##############################
@@ -446,24 +354,31 @@ def _():
     try:
         user = x.validate_user_logged()
 
-        
+        if user['user_role'] == 'admin':
+            raise x.Forbidden("Admins cannot delete their profiles")
+
         db = x.db()
-        q = db.execute("UPDATE users SET user_deleted_at = 1 WHERE user_pk = ?", (user["user_pk"],))
+        
+        db.execute("UPDATE users SET user_deleted_at = 1 WHERE user_pk = ?", (user["user_pk"],))
+        
         db.commit()
 
-        x.send_confirm_delete('henrylnavntoft@gmail.com', user["user_email"], user["user_pk"])
+        x.send_confirm_delete(x.SENDER_EMAIL, user["user_email"], user["user_pk"])
 
-        
         response.delete_cookie("user")
+
         return """
         <template mix-redirect="/login">
         </template>
         """
         
+    except x.Unauthorized as ex:
+        response.status = 303
+        response.set_header('Location', '/login')
+        return
     except Exception as ex:
-        print(ex)
-        response.status = 303 
-        response.set_header('Location', '/profile')
+        return x.handle_exception(ex)
+    
     finally:
         if "db" in locals(): 
             db.close()
@@ -515,7 +430,7 @@ def _():
         q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_deleted_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (user_pk, user_username, user_first_name, user_last_name, user_email, hashed_str, user_role, user_created_at, "0", "0", "0", "0"))
         db.commit()
 
-        x.send_verification_email('henrylnavntoft@gmail.com', user_email, user_pk)
+        x.send_verification_email(x.SENDER_EMAIL, user_email, user_pk)
    
         return """
         <template mix-redirect="/login">
@@ -523,25 +438,7 @@ def _():
         """
     
     except Exception as ex:
-        try:
-            response.status = ex.args[1]
-            return f"""
-            <template mix-target="#toast">
-                <div mix-ttl="3000" class="error">
-                    {ex.args[0]}
-                </div>
-            </template>
-            """
-        except Exception as ex:
-            print(ex)
-            response.status = 500
-            return f"""
-            <template mix-target="#toast">
-                <div mix-ttl="3000" class="error">
-                System under maintainance
-                </div>
-            </template>
-            """
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
 
@@ -555,8 +452,7 @@ def _(id):
         db.commit()
         return template("activate_user.html")
     except Exception as ex:
-        print(ex)
-        return ex
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
 
@@ -569,7 +465,7 @@ def _():
             user_email = x.validate_user_email()
             user_pk = x.validate_user_pk()
             db = x.db()
-            q = db.execute("UPDATE users SET user_is_blocked = 1 WHERE user_pk = ?", (user_pk,))
+            db.execute("UPDATE users SET user_is_blocked = 1 WHERE user_pk = ?", (user_pk,))
             db.commit()
 
             x.user_blocked(x.SENDER_EMAIL, user_email, user_pk)
@@ -579,11 +475,10 @@ def _():
             </template>
             """
         else:
-            raise Exception("User is not an admin", 400)
+            raise x.Forbidden("User is not an admin")
         
     except Exception as ex:
-        response.status = ex.args[1]
-        return ex.args[0]
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()    
 
@@ -606,10 +501,9 @@ def _():
             </template>
             """
         else:
-            raise Exception("User is not an admin", 400)
+            raise x.Forbidden("User is not an admin")
     except Exception as ex:
-        response.status = ex.args[1]
-        return ex.args[0]
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
 
@@ -624,26 +518,23 @@ def _():
         
 
         db = x.db()
+        
         q = db.execute("SELECT * FROM users WHERE user_email = ? LIMIT 1", (user_email,))
+        
         user = q.fetchone()
-        if not user: raise Exception("user not found", 400)
+        
+        if not user: raise x.NotFound("user not found")
 
         if user["user_is_verified"] != 1:
-            raise Exception("User is not verified", 400)
+            raise x.BadRequest("User is not verified")
         if user["user_is_blocked"] != 0:
-            raise Exception("User is blocked", 400)
+            raise x.BadRequest("User is blocked")
         if user["user_deleted_at"] != 0:
-            raise Exception("User not found", 400)
+            raise x.BadRequest("User not found")
         
-        #if user ["user_role"] != "admin": 
-        #   raise Exception("User is not an admin", 400)
 
-        if not bcrypt.checkpw(user_password.encode(), user["user_password"].encode()): raise Exception("Invalid credentials", 400)
+        if not bcrypt.checkpw(user_password.encode(), user["user_password"].encode()): raise x.Unauthorized("Invalid credentials")
         user.pop("user_password") # Do not put the user's password in the cookie
-        
-    
-        
-        print(user)
         
         try:
             import production #type: ignore
@@ -658,25 +549,7 @@ def _():
         </template>
         """
     except Exception as ex:
-        try:
-            response.status = ex.args[1]
-            return f"""
-            <template mix-target="#toast">
-                <div mix-ttl="3000" class="error">
-                    {ex.args[0]}
-                </div>
-            </template>
-            """
-        except Exception as ex:
-            print(ex)
-            response.status = 500
-            return f"""
-            <template mix-target="#toast">
-                <div mix-ttl="3000" class="error">
-                System under maintainance
-                </div>
-            </template>
-            """
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
 
@@ -691,7 +564,7 @@ def _():
         q = db.execute("SELECT * FROM users WHERE user_email = ? LIMIT 1", (user_email,))
         user = q.fetchone()
         if not user:
-            raise Exception("User not found", 400)
+            raise x.NotFound("User not found")
         user_pk = user["user_pk"]
         x.send_password_reset_email('henrylnavntoft@gmail.com', user_email, user_pk)
         return """
@@ -702,19 +575,9 @@ def _():
         </template>
         """
     except Exception as ex:
-        response.status = ex.args[1]
-        return f"""
-        <template mix-target="#toast">
-            <div mix-ttl="3000" class="error">
-                {ex.args[0]}
-            </div>
-        </template>
-        """
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
-
-
-
 
 
 ############################## RESET PASSWORD
@@ -725,64 +588,27 @@ def _(id):
         q = db.execute("SELECT * FROM users WHERE user_pk = ?", (id,))
         user = q.fetchone()
         if not user:
-            raise Exception("User not found", 400)
+            raise x.NotFound("User not found")
         return template("reset_password.html", user=user, id=id)
     except Exception as ex:
         print(ex)
-        return ex
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
 
 
-##############################
-@put("/book_item")
-def _():
-    try:
-        user = x.validate_user_logged()
-        if user['user_role'] != "customer":
-            raise Exception("User is not a customer", 400)
-        else:
-            item_pk = x.validate_item_pk()
-            db = x.db()
-            db.execute("UPDATE items SET item_is_booked = 1 WHERE item_pk = ?", (item_pk,))
-            db.commit()
-        
-            return """
-            <template mix-redirect="/">
-            </template>
-            """
-    except Exception as ex:
-        response.status = ex.args[1]
-        return ex.args[0]
-    finally:
-        if "db" in locals(): db.close()
 
-##############################
-@put("/unbook_item")
-def _():
-    try:
-        user = x.validate_user_logged()
-        if user['user_role'] != "customer":
-            raise Exception("User is not a customer", 400)
-        else:
-            item_pk = x.validate_item_pk()
-            db = x.db()
-            db.execute("UPDATE items SET item_is_booked = 0 WHERE item_pk = ?", (item_pk,))
-            db.commit()
-        
-            return """
-            <template mix-redirect="/">
-            </template>
-            """
-    except Exception as ex:
-        response.status = ex.args[1]
-        return ex.args[0]
-    finally:
-        if "db" in locals(): db.close()
+
+
+
+
+
+
+
 
 
 ############################## ITEMS
-############################## 
+##############################  TODO: TEST IN POSTMAN
 @post("/add_item")
 def _():
     try:
@@ -790,6 +616,15 @@ def _():
         if user['user_role'] != "partner":
             raise x.Forbidden("User is not a partner")
         else:
+
+            # Debugging: Print received form data and files
+            print("Received form data:", request.forms)
+            for key, value in request.forms.items():
+                print(f"Form data - {key}: {value}")
+
+            print("Received files:", request.files)
+            for key, value in request.files.items():
+                print(f"File data - {key}: {value.filename}")
 
             # User
             user_pk = user['user_pk']
@@ -847,6 +682,122 @@ def _():
 
 
 
+############################## EDIT ITEM TODO: TEST IN POSTMAN
+@put("/edit_item")
+def _():
+    try:
+        user = x.validate_user_logged()
+        
+        
+        item_pk = x.validate_item_pk()
+        item_name = x.validate_item_name()
+        item_description = x.validate_item_description()
+        item_price_per_night = x.validate_item_price_per_night()
+        item_updated_at = epoch.time()
+
+
+        x.validate_user_has_rights_to_item(user, item_pk)
+
+        # Validate new images
+        try:
+            new_images = x.validate_item_images()  
+        except x.BadRequest as ex:
+            new_images = []
+
+        db = x.db()
+
+        # Update item details
+        db.execute(""" UPDATE items
+        SET item_name = ?, item_description = ?, item_price_per_night = ?, item_updated_at = ?
+        WHERE item_pk = ?
+        """, (item_name, item_description, item_price_per_night, item_updated_at, item_pk))
+        
+        db.commit()
+
+        # Fetch existing images from the database
+        old_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (item_pk,)).fetchall()
+
+
+        if len(old_images) + len(new_images) < 1:
+            raise x.BadRequest(f"There must be at least 1 images for the item.")
+
+        # Process new images if provided
+        if new_images:
+            total_images = len(old_images) + len(new_images)
+            if total_images > 5:
+                raise x.BadRequest("Total number of images exceeds the maximum allowed 5")
+
+        # Process each new image, rename it, save it, and store the filename in the database
+            for image in new_images:
+                filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
+                path = Path(f"images/{filename}")
+                image.save(str(path))  # Save the image with the new filename
+
+                # Insert the image filename into the item_images table (without path)
+                db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
+            db.commit()
+
+        return """
+        <template mix-redirect="/profile">
+        </template>
+        """
+    except Exception as ex:
+        print(ex)
+        return x.handle_exception(ex)
+    finally:
+        if "db" in locals(): db.close()
+
+
+
+############################## DELETE IMAGE
+@delete("/delete_image/<image_url>")
+def _(image_url):
+    try:
+        user = x.validate_user_logged()
+
+        # Validate if the user has rights to the image
+        x.validate_user_has_rights_to_image(user, image_url)
+
+        db = x.db()
+
+        # Fetch the image row
+        image_row = db.execute("SELECT * FROM item_images WHERE image_url = ?", (image_url,)).fetchone()
+        if not image_row:
+            raise x.NotFound("Image not found")
+
+        # Fetch all images associated with the item
+        all_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (image_row['item_fk'],)).fetchall()
+
+        # Check how many images are left
+        remaining_images = len(all_images)
+        if remaining_images <= 1:
+            raise x.BadRequest("Cannot delete the last image of an item.")
+
+        # Delete the image file if it exists
+        path = Path(f"images/{image_url}")
+        if path.exists():
+            path.unlink()  # Delete the image file
+            print("Image deleted successfully.")
+        else:
+            print("Image file not found.")
+
+        # Delete the image record from the database
+        db.execute("DELETE FROM item_images WHERE image_url = ?", (image_url,))
+        db.commit()
+
+        return """
+        <template mix-redirect="/profile">
+        </template>
+        """
+    
+    except Exception as ex:
+        return x.handle_exception(ex)
+    
+    finally:
+        if "db" in locals(): db.close()
+
+
+
 ##############################  DELETE ITEM
 @delete("/delete_item/<item_pk>") 
 def _(item_pk):
@@ -875,146 +826,140 @@ def _(item_pk):
         </template>
         """
     except Exception as ex:
-        response.status = ex.args[1]
-        return ex.args[0]
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
-
-############################## EDIT ITEM
-@put("/edit_item")
-def _():
-    try:
-        user = x.validate_user_logged()
-        if user['user_role'] != "partner":
-            raise Exception("User is not a partner", 400)
-        else:
-            item_pk = x.validate_item_pk()
-            item_name = x.validate_item_name()
-            item_description = x.validate_item_description()
-            item_price_per_night = x.validate_item_price_per_night()
-            item_updated_at = epoch.time()
-
-            # Validate new images
-            try:
-                new_images = x.validate_item_images()  
-            except Exception as ex:
-                new_images = []
-
-            db = x.db()
-
-            # Update item details
-            db.execute("""
-            UPDATE items
-            SET item_name = ?, item_description = ?, item_price_per_night = ?, item_updated_at = ?
-            WHERE item_pk = ?
-            """, (item_name, item_description, item_price_per_night, item_updated_at, item_pk))
-            db.commit()
-
-            # Fetch existing images from the database
-            old_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (item_pk,)).fetchall()
-
-
-            if len(old_images) + len(new_images) < 1:
-                raise Exception(f"There must be at least 1 images for the item.", 400)
-
-            # Process new images if provided
-            if new_images:
-                total_images = len(old_images) + len(new_images)
-                if total_images > 5:
-                    raise Exception("Total number of images exceeds the maximum allowed 5", 400)
-
-            # Process each new image, rename it, save it, and store the filename in the database
-                for image in new_images:
-                    filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
-                    path = Path(f"images/{filename}")
-                    image.save(str(path))  # Save the image with the new filename
-
-                    # Insert the image filename into the item_images table (without path)
-                    db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
-                db.commit()
-
-            # Ensure there is at least one image
-            if len(old_images) + len(new_images) == 0:
-                raise Exception("There must be at least one image for the item.", 400)
-
-            return """
-            <template mix-redirect="/profile">
-            </template>
-            """
-    except Exception as ex:
-        response.status = 500
-        print(f"Exception: {ex}")  # Debugging: Print the exception
-        return f"""
-        <template mix-target="#toast">
-            <div mix-ttl="3000" class="error">
-                {ex.args[0]}
-            </div>
-        </template>
-        """
-    finally:
-        if "db" in locals(): db.close()
-
 
 
 ##############################
-@delete("/delete_image/<image_url>")
-def _(image_url):
+@put("/book_item")
+def _():
     try:
         user = x.validate_user_logged()
-        db = x.db()
-
-        # Fetch the image row and item details in one go
-        image_row = db.execute("SELECT * FROM item_images WHERE image_url = ?", (image_url,)).fetchone()
-        if image_row is None:
-            raise Exception("Image not found", 404)
-
-        item = db.execute("SELECT * FROM items WHERE item_pk = ?", (image_row['item_fk'],)).fetchone()
-        if item is None:
-            raise Exception("Item not found", 404)
-
-        # Fetch all images associated with the item
-        all_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (image_row['item_fk'],)).fetchall()
-
-        if item['item_owner_fk'] == user['user_pk']:
-            # Check how many images are left
-            remaining_images = len(all_images)
-            if remaining_images <= 1:
-                raise Exception("Cannot delete the last image of an item.", 400)
-
-            path = Path(f"images/{image_url}")
-
-            if path.exists():
-                path.unlink()  # Delete the image file
-                print("Image deleted successfully.")
-            else:
-                print("Image file not found.")
-
-            db.execute("DELETE FROM item_images WHERE image_url = ?", (image_url,))
+        if user['user_role'] != "customer":
+            raise x.Unauthorized("User is not a customer")
+        else:
+            item_pk = x.validate_item_pk()
+            db = x.db()
+            db.execute("UPDATE items SET item_is_booked = 1 WHERE item_pk = ?", (item_pk,))
             db.commit()
-            return f"""
-            <template mix-redirect="/profile">
+        
+            return """
+            <template mix-redirect="/">
             </template>
             """
-        
-        else:
-            raise Exception("User does not have the right to delete this image", 403)
-        
-
-
     except Exception as ex:
-        response.status = ex.args[1] if len(ex.args) > 1 else 500
-        return f"""
-        <template mix-target="#toast">
-            <div mix-ttl="3000" class="error">
-                {ex.args[0]}
-            </div>
-        </template>
-        """
+        return x.handle_exception(ex)
+    finally:
+        if "db" in locals(): db.close()
+
+##############################
+@put("/unbook_item")
+def _():
+    try:
+        user = x.validate_user_logged()
+        if user['user_role'] != "customer":
+            raise x.Unauthorized("User is not a customer")
+        else:
+            item_pk = x.validate_item_pk()
+            db = x.db()
+            db.execute("UPDATE items SET item_is_booked = 0 WHERE item_pk = ?", (item_pk,))
+            db.commit()
+        
+            return """
+            <template mix-redirect="/">
+            </template>
+            """
+    except Exception as ex:
+        return x.handle_exception(ex)
     finally:
         if "db" in locals(): db.close()
 
 
+##############################
+@put("/block_item")
+def _():
+    try:
+        item_pk = x.validate_item_pk()
+        user = x.validate_user_logged()
+        x.validate_user_has_rights_to_item(user, item_pk)
+        
+        
+        db = x.db()
 
+        # Update the item to set it as blocked
+        db.execute("UPDATE items SET item_is_blocked = 1 WHERE item_pk = ?", (item_pk,))
+        
+        # Retrieve the owner's email directly from the users table using the item_owner field from the items table
+        query = """
+        SELECT u.user_email 
+        FROM users u 
+        JOIN items i ON u.user_pk = i.item_owner_fk 
+        WHERE i.item_pk = ?
+        """
+        q = db.execute(query, (item_pk,))
+        user_info = q.fetchone()
+        
+        if not user_info:
+            raise x.NotFound("User not found")
+        
+        user_email = user_info['user_email']
+        
+        db.commit()
+
+        x.item_blocked(x.SENDER_EMAIL, user_email, item_pk)
+
+        return """
+        <template mix-redirect="/profile">
+        </template>
+        """
+    except Exception as ex:
+        return x.handle_exception(ex)
+    finally:
+        if "db" in locals(): db.close()
+
+
+##############################
+@put("/unblock_item")
+def _():
+    try:
+        item_pk = x.validate_item_pk()
+        user = x.validate_user_logged()
+        x.validate_user_has_rights_to_item(user, item_pk)
+        
+        db = x.db()
+        
+        # Update the item to set it as blocked
+        db.execute("UPDATE items SET item_is_blocked = 0 WHERE item_pk = ?", (item_pk,))
+        
+        # Retrieve the owner's email directly from the users table using the item_owner field from the items table
+        query = """
+        SELECT u.user_email 
+        FROM users u 
+        JOIN items i ON u.user_pk = i.item_owner_fk 
+        WHERE i.item_pk = ?
+        """
+        q = db.execute(query, (item_pk,))
+        user_info = q.fetchone()
+        
+        if not user_info:
+            raise x.NotFound("User not found")
+        
+        user_email = user_info['user_email']
+        
+        db.commit()
+
+        db.commit()
+
+        x.item_unblocked(x.SENDER_EMAIL, user_email, item_pk)   
+        return """
+        <template mix-redirect="/profile">
+        </template>
+        """
+    except Exception as ex:
+        return x.handle_exception(ex)
+    finally:
+        if "db" in locals(): db.close()
 
 
 # ARANGO DB
@@ -1037,8 +982,7 @@ def _():
         else:
             return {"status": "failure", "message": "Failed to fetch users."}
     except Exception as ex:
-        print(ex)
-        return {"status": "error", "message": str(ex)}
+        return x.handle_exception(ex)
     finally:
         pass
 
@@ -1071,8 +1015,7 @@ def _():
         else:
             return {"status": "failure", "message": "Failed to insert user."}
     except Exception as ex:
-        print(ex)
-        return {"status": "error", "message": str(ex)}
+        return x.handle_exception(ex)
     finally:
         pass
 
@@ -1111,9 +1054,7 @@ def _(user_id):
         else:
             return {"status": "failure", "message": "Failed to update user"}
     except Exception as ex:
-        print(ex)
-        response.status = 500
-        return {"status": "error", "message": "System under maintenance"}
+        return x.handle_exception(ex)
     finally:
         pass
 
@@ -1151,9 +1092,7 @@ def _(user_id):
             else:
                 return {"status": "failure", "message": "Failed to delete user"}
         except Exception as ex:
-            print(ex)
-            response.status = 500
-            return {"status": "error", "message": "System under maintenance"}
+            return x.handle_exception(ex)
         finally:
             pass
 

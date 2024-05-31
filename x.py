@@ -46,10 +46,6 @@ class InternalServerError(HTTPException):
     def __init__(self, custom_message=None):
         super().__init__("Internal server error", 500, custom_message)
 
-class RedirectException(HTTPException):
-    def __init__(self, location, custom_message=None):
-        super().__init__(custom_message or "Redirect", 303)
-        self.location = location
 
 ###########################################################################################
 def handle_exception(ex):
@@ -68,10 +64,6 @@ def handle_exception(ex):
     elif isinstance(ex, InternalServerError):
         response.status = ex.status_code
         message = str(ex)
-    elif isinstance(ex, RedirectException):
-        response.status = ex.status_code
-        response.set_header('Location', ex.location)
-        return ""
     else:
         response.status = 500
         message = "System under maintenance"
@@ -138,6 +130,34 @@ def validate_user_has_rights_to_item(user, item_pk):
             raise e
     except Exception as e:
             raise BadRequest(str(e))
+    
+
+##############################
+def validate_user_has_rights_to_image(user, image_url):
+    try:
+        database = db()
+        q = database.execute("SELECT * FROM item_images WHERE image_url = ?", (image_url,))
+        image = q.fetchone()
+
+        if not image:
+            raise NotFound("Image not found")
+
+        item = database.execute("SELECT * FROM items WHERE item_pk = ?", (image['item_fk'],)).fetchone()
+        if not item:
+            raise NotFound("Item not found")
+
+        if user['user_pk'] == item['item_owner_fk'] or user['user_role'] == 'admin':
+            return True
+        else:
+            raise Forbidden("You do not have the rights to do that")
+    except sqlite3.Error as e:
+        raise InternalServerError(f"Database error: {e}")
+    except HTTPException as e:
+        raise e
+    except Exception as e:
+        raise BadRequest(str(e))
+    
+
 
 
 ########################################################################################### USER VALIDATION
