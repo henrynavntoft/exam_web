@@ -19,7 +19,7 @@
 
 
 
-    <form id="{{user['user_pk']}}">
+    <form class="mt-2" id="{{user['user_pk']}}">
         <input name="user_pk" hidden type="text" value="{{user['user_pk']}}">
         <input name="user_email" hidden type="text" value="{{user['user_email']}}">
         % if user['user_is_blocked'] == 0:
@@ -33,7 +33,5 @@
         % end
     </form>
 
-
-</div>
 
 </div>

@@ -1,0 +1,25 @@
+1. Sikre at password er sikkert - dvs. mindst 8, tal, special tegn etc. 
+LØST - skal bare laves regex om
+
+
+2. Den skal ikke refreshe hvis man uploader flere end 5 billeder i edit item, men give alert
+
+
+3. Fixe issue med add_item billeder i postman
+
+4. tjekke validation igennem front og bagend
+
+5. tjekke efter genbrugt kode, lave utility functions istedet
+
+
+6. Sikre at kun det første billed er vist som udgangspunkt
+
+7. Lav side hvor man kan se hver property
+
+
+
+
+
+Ekstra:
+1. Lave desginet lækkert
+2. splitte py koden op i flere filer 

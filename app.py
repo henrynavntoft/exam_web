@@ -687,22 +687,15 @@ def _():
 def _():
     try:
         user = x.validate_user_logged()
-        
-        
         item_pk = x.validate_item_pk()
         item_name = x.validate_item_name()
         item_description = x.validate_item_description()
         item_price_per_night = x.validate_item_price_per_night()
         item_updated_at = epoch.time()
 
-
         x.validate_user_has_rights_to_item(user, item_pk)
 
-        # Validate new images
-        try:
-            new_images = x.validate_item_images()  
-        except x.BadRequest as ex:
-            new_images = []
+        new_images = x.validate_item_images()  
 
         db = x.db()
 
@@ -716,23 +709,24 @@ def _():
 
         # Fetch existing images from the database
         old_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (item_pk,)).fetchall()
+        print("Old images:", old_images)
+       
 
-
-        if len(old_images) + len(new_images) < 1:
-            raise x.BadRequest(f"There must be at least 1 images for the item.")
 
         # Process new images if provided
         if new_images:
             total_images = len(old_images) + len(new_images)
             if total_images > 5:
                 raise x.BadRequest("Total number of images exceeds the maximum allowed 5")
+            elif total_images < 1:
+                raise x.BadRequest("There must be at least 1 images for the item.")
 
-        # Process each new image, rename it, save it, and store the filename in the database
+            # Process each new image, rename it, save it, and store the filename in the database
             for image in new_images:
                 filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
                 path = Path(f"images/{filename}")
                 image.save(str(path))  # Save the image with the new filename
-
+                
                 # Insert the image filename into the item_images table (without path)
                 db.execute("INSERT INTO item_images (item_fk, image_url) VALUES (?, ?)", (item_pk, filename))
             db.commit()

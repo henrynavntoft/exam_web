@@ -628,8 +628,8 @@ video {
   z-index: 30;
 }
 
-.z-40 {
-  z-index: 40;
+.z-50 {
+  z-index: 50;
 }
 
 .mx-4 {
@@ -711,6 +711,10 @@ video {
   height: 50vh;
 }
 
+.h-\[80vh\] {
+  height: 80vh;
+}
+
 .h-full {
   height: 100%;
 }
@@ -735,8 +739,8 @@ video {
   width: 8rem;
 }
 
-.w-\[500px\] {
-  width: 500px;
+.w-\[550px\] {
+  width: 550px;
 }
 
 .w-full {
@@ -855,6 +859,10 @@ video {
 
 .p-4 {
   padding: 1rem;
+}
+
+.p-6 {
+  padding: 1.5rem;
 }
 
 .px-2 {
