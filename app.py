@@ -50,14 +50,14 @@ def _(item_splash_image):
 @get("/signup")
 def _():
     x.no_cache()
-    return template("signup.html")
+    return template("signup.html", title="Sign Up")
 
 
 ##############################
 @get("/login")
 def _():
     x.no_cache()
-    return template("login.html")
+    return template("login.html", title="Login")
 
 
 ##############################
@@ -282,12 +282,12 @@ def _():
             rows = q.fetchall()
             items = x.group_items_with_images(rows)
 
-            return template("profile_partner.html", is_logged=True, user=user, items=items, is_partner=is_partner)
+            return template("profile_partner.html", is_logged=True, user=user, items=items, is_partner=is_partner, title="Partner Profile")
   
 
         elif user['user_role'] == 'customer':
             # Customers get a customer-specific profile
-            return template("profile_customer.html", is_logged=True, user=user)
+            return template("profile_customer.html", is_logged=True, user=user, title="Customer Profile")
   
 
         elif user['user_role'] == 'admin':
@@ -308,7 +308,7 @@ def _():
 
 
             # Render a template with item information for admin
-            return template("profile.html", is_logged=True, items=items, user=user, users=users, is_admin=is_admin)
+            return template("profile.html", is_logged=True, items=items, user=user, users=users, is_admin=is_admin, title="Admin Profile")
    
     except x.Unauthorized as ex:
         response.status = 303
@@ -720,7 +720,12 @@ def _():
             # Process each image, rename it, save it, and store just the filename in the database
             for image in item_images:
                 filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
-                path = f"images/{filename}"
+                try: 
+                    import production #type: ignore
+                    path = Path(f"/henrynavntoft/images/{filename}")
+                except:
+                    path = Path(f"images/{filename}")
+                
                 image.save(path) # Save the image with the new filename
 
                 # Insert the image filename into the item_images table (without path)
@@ -783,7 +788,12 @@ def _():
             # Process each new image, rename it, save it, and store the filename in the database
             for image in new_images:
                 filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
-                path = Path(f"images/{filename}")
+                try: 
+                    import production #type: ignore
+                    path = Path(f"/henrynavntoft/images/{filename}")
+                except:
+                    path = Path(f"images/{filename}")
+                
                 image.save(str(path))  # Save the image with the new filename
                 
                 # Insert the image filename into the item_images table (without path)
