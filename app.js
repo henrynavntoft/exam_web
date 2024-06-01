@@ -24,17 +24,15 @@ function mapPins(items) {
     return;
   }
 
-  console.log("Items:", items);
-
   items.forEach((item) => {
     const popup = new mapboxgl.Popup({ offset: 40 }).setHTML(
       `<div class="flex flex-col gap-2 p-2 rounded-lg">
         <img src="images/${item.item_images[0]}" alt="${item.item_name}" class="w-full h-32 object-cover rounded-lg">
-         <h3 class="text-xl">${item.item_name}</h3>
-         <p> Description: ${item.item_description}</p>
-         <p>Price per night: <b> ${item.item_price_per_night} </b> DKK</p>
-        <button>See more</button>
-       </div>`
+        <h3 class="text-xl">${item.item_name}</h3>
+        <p>Description: ${item.item_description}</p>
+        <p>Price per night: <b>${item.item_price_per_night}</b> DKK</p>
+        <button><a href="property/${item.item_pk}">View Property</a></button>
+      </div>`
     );
 
     const marker = new mapboxgl.Marker()
@@ -50,8 +48,7 @@ function mapPins(items) {
   });
 }
 
-const itemsContainer = document.getElementById("items");
-itemsContainer.addEventListener("click", function (event) {
+document.getElementById("items").addEventListener("click", function (event) {
   let targetElement = event.target;
   while (targetElement && !targetElement.id.startsWith("item-")) {
     targetElement = targetElement.parentNode;

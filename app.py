@@ -85,22 +85,36 @@ def _():
         
         is_logged = False
         is_customer = False
+        is_admin = False
+        is_partner = False
         
         try:    
             user = x.validate_user_logged()
             is_logged = True
             if user['user_role'] == 'customer':
                 is_customer = True
+            if user['user_role'] == 'admin':
+                is_admin = True
+            if user['user_role'] == 'partner':
+                is_partner = True
         except x.Unauthorized:
             pass
 
-        query = """
+        if is_logged and is_admin:
+            query = """
             SELECT i.*, img.image_url 
             FROM items i 
-            LEFT JOIN item_images img ON i.item_pk = img.item_fk 
-            WHERE i.item_is_blocked = 0
+            LEFT JOIN item_images img ON i.item_pk = img.item_fk
             ORDER BY i.item_created_at
             """
+        else:
+            query = """
+        SELECT i.*, img.image_url 
+        FROM items i 
+        LEFT JOIN item_images img ON i.item_pk = img.item_fk
+        WHERE i.item_is_blocked = 0
+        ORDER BY i.item_created_at
+        """
         
         q = db.execute(query)
         rows = q.fetchall()
@@ -125,14 +139,21 @@ def _():
 @get("/items/page/<page_number>")
 def _(page_number):
     try:
+        
         is_logged = False
         is_customer = False
+        is_admin = False
+        is_partner = False
         
-        try:
+        try:    
             user = x.validate_user_logged()
             is_logged = True
             if user['user_role'] == 'customer':
                 is_customer = True
+            if user['user_role'] == 'admin':
+                is_admin = True
+            if user['user_role'] == 'partner':
+                is_partner = True
         except x.Unauthorized:
             pass
 
@@ -140,7 +161,7 @@ def _(page_number):
         next_page = int(page_number) + 1
         offset = (int(page_number) - 1) * x.ITEMS_PER_PAGE
 
-        if is_logged and user['user_role'] == 'admin':
+        if is_logged and is_admin:
             query = """
             SELECT i.*, img.image_url 
             FROM items i 
@@ -179,6 +200,52 @@ def _(page_number):
         </template>
         <template mix-function="mapPins">{json.dumps(items)}</template>
         """
+    except Exception as ex:
+        return x.handle_exception(ex)
+    finally:
+        if "db" in locals(): db.close()
+
+############################## SINGLE PROPERTY
+@get("/property/<item_pk>")
+def _(item_pk):
+    try:
+        
+        is_logged = False
+        is_customer = False
+        is_admin = False
+        is_partner = False
+        
+        try:    
+            user = x.validate_user_logged()
+            is_logged = True
+            if user['user_role'] == 'customer':
+                is_customer = True
+            if user['user_role'] == 'admin':
+                is_admin = True
+            if user['user_role'] == 'partner':
+                is_partner = True
+        except x.Unauthorized:
+            pass
+
+        db = x.db()
+
+        # Fetch the item
+        query = """
+        SELECT i.*, img.image_url
+        FROM items i
+        LEFT JOIN item_images img ON i.item_pk = img.item_fk
+        WHERE i.item_pk = ?
+        """
+        q = db.execute(query, (item_pk,))
+        rows = q.fetchall()
+        item = x.group_items_with_images(rows)[0]
+    
+        
+        if not item:
+            raise x.NotFound("Item not found")
+        
+
+        return template("property.html", item=item, is_logged=is_logged, is_customer=is_customer)
     except Exception as ex:
         return x.handle_exception(ex)
     finally:
@@ -295,7 +362,7 @@ def _():
         if "db" in locals(): db.close()
 
 
-##############################  EDIT PASSWORD
+##############################  EDIT PASSWORD # TODO: VALIDATE ONLY USER CAN CHANGE??
 @put("/edit_password")
 def _():
     try:
@@ -569,7 +636,7 @@ def _():
         x.send_password_reset_email('henrylnavntoft@gmail.com', user_email, user_pk)
         return """
         <template mix-target="#toast">
-            <div mix-ttl="3000" class="error">
+            <div mix-ttl="3000" class="ok">
                 Password reset email sent successfully
             </div>
         </template>
@@ -616,15 +683,7 @@ def _():
         if user['user_role'] != "partner":
             raise x.Forbidden("User is not a partner")
         else:
-
-            # Debugging: Print received form data and files
-            print("Received form data:", request.forms)
-            for key, value in request.forms.items():
-                print(f"Form data - {key}: {value}")
-
-            print("Received files:", request.files)
-            for key, value in request.files.items():
-                print(f"File data - {key}: {value.filename}")
+            
 
             # User
             user_pk = user['user_pk']
@@ -837,7 +896,7 @@ def _():
             db = x.db()
             db.execute("UPDATE items SET item_is_booked = 1 WHERE item_pk = ?", (item_pk,))
             db.commit()
-        
+
             return """
             <template mix-redirect="/">
             </template>

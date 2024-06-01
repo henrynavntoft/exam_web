@@ -632,6 +632,10 @@ video {
   z-index: 50;
 }
 
+.m-4 {
+  margin: 1rem;
+}
+
 .mx-4 {
   margin-left: 1rem;
   margin-right: 1rem;
@@ -707,6 +711,10 @@ video {
   height: 12rem;
 }
 
+.h-56 {
+  height: 14rem;
+}
+
 .h-\[50vh\] {
   height: 50vh;
 }
@@ -737,10 +745,6 @@ video {
 
 .w-32 {
   width: 8rem;
-}
-
-.w-\[550px\] {
-  width: 550px;
 }
 
 .w-full {
@@ -932,8 +936,8 @@ video {
 
 /* mixhtml */
 
-.mix-error{
-  background-color: rgba(240,240,240,1);
+.mix-error {
+  background-color: rgba(240, 240, 240, 1);
 }
 
 @keyframes fadeOut {
@@ -961,7 +965,8 @@ form {
   width: 100%;
 }
 
-input, button {
+input,
+button {
   height: 3rem !important;
   width: 100% !important;
   border-radius: 0.375rem !important;

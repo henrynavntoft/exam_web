@@ -52,22 +52,27 @@ def handle_exception(ex):
     if isinstance(ex, BadRequest):
         response.status = ex.status_code
         message = str(ex)
+        print(ex)
     elif isinstance(ex, Unauthorized):
         response.status = ex.status_code
         message = str(ex)
+        print(ex)
     elif isinstance(ex, Forbidden):
         response.status = ex.status_code
         message = str(ex)
+        print(ex)
     elif isinstance(ex, NotFound):
         response.status = ex.status_code
         message = str(ex)
+        print(ex)
     elif isinstance(ex, InternalServerError):
         response.status = ex.status_code
         message = str(ex)
+        print(ex)  
     else:
         response.status = 500
         message = "System under maintenance"
-        print(ex)  # Log the unexpected exception for debugging
+        print(ex)  
 
     return f"""
     <template mix-target="#toast">
@@ -225,6 +230,7 @@ def validate_user_last_name():
 USER_PASSWORD_MIN = 6
 USER_PASSWORD_MAX = 50
 USER_PASSWORD_REGEX = "^.{6,50}$"
+# USER_PASSWORD_REGEX = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$"
 
 def validate_user_password():
     user_password = request.forms.get("user_password", "").strip()
@@ -346,7 +352,7 @@ def send_verification_email(from_email, to_email, verification_id):
         message = MIMEMultipart()
         message["To"] = from_email
         message["From"] = to_email
-        message["Subject"] = 'Testing my email to verify'
+        message["Subject"] = 'Verify your account'
 
         try:
             import production #type: ignore
@@ -368,6 +374,7 @@ def send_verification_email(from_email, to_email, verification_id):
                         </head>
                         <body>
                             <h1>You need to verify your account</h1>
+                            <p>Click the link below to verify your account:</p>
                             <a href="{base_url}/activate_user/{verification_id}">Activate user </a>
                         </body>
                         </html>

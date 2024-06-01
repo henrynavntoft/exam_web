@@ -2,7 +2,7 @@
 
 
 
-<div class="item" id="item-{{item['item_pk']}}">
+<section class="item" id="item-{{item['item_pk']}}">
     <div class="image-gallery">
         % for image_url in item['item_images']:
         <img alt="" src="/images/{{image_url}}" alt="{{item['item_name']}}"
@@ -54,6 +54,8 @@
             </form>
         </section>
         % end
+
+
         % if get("is_logged", False) and get("is_partner", False):
         <section class="flex gap-2">
             <form id="{{item['item_pk']}}_1">
@@ -61,10 +63,10 @@
                     Delete
                 </button>
             </form>
-            <button class="mb-2 open-dialog" data-dialog-id="dialog-{{ item['item_pk'] }}">
+            <button class="mb-2 open-dialog" data-dialog-id="dialog-{{ item['item_pk']}}">
                 Edit details
             </button>
-            <dialog id="dialog-{{item['item_pk']}}" class="rounded-lg p-6 w-[550px] h-[80vh]">
+            <dialog id="dialog-{{item['item_pk']}}" class="rounded-lg p-6 h-[80vh]">
                 <h3 class="text-2xl font-bold">Edit {{item["item_name"]}}</h3>
                 <p>Existing images:</p>
                 <div id="existing-images" class="flex flex-wrap gap-2">
@@ -128,6 +130,8 @@
             </dialog>
         </section>
         % end
+
+
         % if get("is_logged", False) and get("is_customer", False):
         <form id="{{item['item_pk']}}">
             <input name="item_pk" hidden type="text" value="{{item['item_pk']}}">
@@ -144,7 +148,7 @@
         % end
     </div>
 
-</div>
+</section>
 
 
 <script>
