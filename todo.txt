@@ -1,19 +1,19 @@
 
 
 
-3. Fixe issue med add_item billeder i postman
-
-
-
 4. tjekke validation igennem front og bagend
 
 5. tjekke efter genbrugt kode, lave utility functions istedet
 
 
-6. Sikre at kun det første billed er vist som udgangspunkt
 
 
-7. Lav side hvor man kan se hver property
+
+7. LAV property route i postman
+
+
+8. Man skal kunne edit item uden at uploade nyt billede
+
 
 
 

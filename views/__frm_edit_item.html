@@ -1,0 +1,37 @@
+% import x
+
+<form id="{{item['item_pk']}}_2" class="flex flex-col gap-2">
+
+    <input name="item_pk" type="text" hidden value="{{item['item_pk']}}" mix-check="{{x.ITEM_PK_REGEX}}">
+
+
+    <div>
+        <label for="item_name">Property name:</label>
+        <input name="item_name" class="w-full border" type="text" placeholder="Property name"
+            value="{{item['item_name']}}" mix-check="{{x.ITEM_NAME_REGEX}}">
+    </div>
+
+    <div>
+        <label for="item_images">Property images:</label>
+        <input name="item_images" class="w-full border p-2" type="file" multiple="multiple" accept="image/*">
+    </div>
+
+    <div>
+        <label for="item_price_per_night">Price per night:</label>
+        <input name="item_price_per_night" class="w-full border" type="text" placeholder="Price per night"
+            value="{{item['item_price_per_night']}}" mix-check="{{x.ITEM_PRICE_REGEX}}">
+    </div>
+
+    <div>
+        <label for="item_description">Property description:</label>
+        <input name="item_description" class="w-full border" type="text" placeholder="Property description"
+            value="{{item['item_description']}}" mix-check="{{x.ITEM_DESCRIPTION_REGEX}}">
+    </div>
+
+
+
+    <button mix-data="[id='{{item['item_pk']}}_2']" mix-put="/edit_item">
+        Edit property
+    </button>
+
+</form>

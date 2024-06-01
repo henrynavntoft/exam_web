@@ -59,22 +59,21 @@ def _():
     x.no_cache()
     return template("login.html", title="Login")
 
-
-##############################
-@get("/logout")
-def _():
-    response.delete_cookie("user")
-    response.status = 303
-    response.set_header('Location', '/login')
-    return
-
-
 ##############################
 @get("/change_password")
 def _():
     x.no_cache()
     return template("change_password.html")
 
+##############################
+@get("/logout")
+def _():
+    x.no_cache()
+    response.delete_cookie("user")
+    response.status = 303
+    response.set_header('Location', '/login')
+    return
+  
 
 ############################## HOME
 ##############################
@@ -100,23 +99,16 @@ def _():
         except x.Unauthorized:
             pass
 
-        if is_logged and is_admin:
-            query = """
-            SELECT i.*, img.image_url 
-            FROM items i 
-            LEFT JOIN item_images img ON i.item_pk = img.item_fk
-            ORDER BY i.item_created_at
-            """
-        else:
-            query = """
-        SELECT i.*, img.image_url 
-        FROM items i 
-        LEFT JOIN item_images img ON i.item_pk = img.item_fk
-        WHERE i.item_is_blocked = 0
-        ORDER BY i.item_created_at
+        
+        query = """
+        SELECT * FROM item_images 
+        INNER JOIN items ON item_images.item_fk = items.item_pk 
+        WHERE items.item_is_blocked = 0 
+        ORDER BY item_created_at
         """
         
         q = db.execute(query)
+
         rows = q.fetchall()
         
         # Group items with their images
@@ -158,50 +150,53 @@ def _(page_number):
             pass
 
         db = x.db()
-        next_page = int(page_number) + 1
-        offset = (int(page_number) - 1) * x.ITEMS_PER_PAGE
 
-        if is_logged and is_admin:
-            query = """
-            SELECT i.*, img.image_url 
-            FROM items i 
-            LEFT JOIN item_images img ON i.item_pk = img.item_fk
-            ORDER BY i.item_created_at
-            """
-        else:
-            query = """
-        SELECT i.*, img.image_url 
-        FROM items i 
-        LEFT JOIN item_images img ON i.item_pk = img.item_fk
-        WHERE i.item_is_blocked = 0
-        ORDER BY i.item_created_at
+        query = """
+        SELECT * FROM item_images 
+        INNER JOIN items ON item_images.item_fk = items.item_pk 
+        WHERE items.item_is_blocked = 0 
+        ORDER BY item_created_at
         """
+
         q = db.execute(query)
+
         rows = q.fetchall()
         
-        # Group items with their images
         items = x.group_items_with_images(rows)
 
-        # Apply limit and offset after grouping
+        next_page = int(page_number) + 1
+        
+        offset = (int(page_number) - 1) * x.ITEMS_PER_PAGE
+
         items = items[offset:offset + x.ITEMS_PER_PAGE]
 
         html = ""
+        
         for item in items: 
             html += template("_item", item=item, is_logged=is_logged, is_customer=is_customer)    
+        
         btn_more = template("__btn_more", page_number=next_page)
+        
         if len(items) < x.ITEMS_PER_PAGE or not is_logged: 
             btn_more = ""
+        
         return f"""
         <template mix-target="#items" mix-bottom>
             {html}
         </template>
+
         <template mix-target="#more" mix-replace>
             {btn_more}
         </template>
-        <template mix-function="mapPins">{json.dumps(items)}</template>
+        
+        <template mix-function="mapPins">
+        {json.dumps(items)}
+        </template>
         """
+    
     except Exception as ex:
         return x.handle_exception(ex)
+    
     finally:
         if "db" in locals(): db.close()
 
@@ -209,7 +204,6 @@ def _(page_number):
 @get("/property/<item_pk>")
 def _(item_pk):
     try:
-        
         is_logged = False
         is_customer = False
         is_admin = False
@@ -227,17 +221,22 @@ def _(item_pk):
         except x.Unauthorized:
             pass
 
+        
+
         db = x.db()
 
         # Fetch the item
         query = """
-        SELECT i.*, img.image_url
-        FROM items i
-        LEFT JOIN item_images img ON i.item_pk = img.item_fk
-        WHERE i.item_pk = ?
+        SELECT * FROM item_images 
+        INNER JOIN items ON item_images.item_fk = items.item_pk 
+        WHERE items.item_pk = ? 
+        AND items.item_is_blocked = 0
         """
+
         q = db.execute(query, (item_pk,))
+        
         rows = q.fetchall()
+        
         item = x.group_items_with_images(rows)[0]
     
         
@@ -271,15 +270,19 @@ def _():
         if user['user_role'] == 'partner':
             is_partner = True
             # Partners get a partner-specific profile with their items
+            
             query = """
-            SELECT i.*, img.image_url 
-            FROM items i 
-            LEFT JOIN item_images img ON i.item_pk = img.item_fk 
-            WHERE i.item_owner_fk = ? AND i.item_is_blocked = 0
-            ORDER BY i.item_created_at
+            SELECT *
+            FROM item_images
+            INNER JOIN items ON item_images.item_fk = items.item_pk
+            WHERE items.item_owner_fk = ? AND items.item_is_blocked = 0
+            ORDER BY item_created_at
             """
+            
             q = db.execute(query, (user['user_pk'],))
+            
             rows = q.fetchall()
+            
             items = x.group_items_with_images(rows)
 
             return template("profile_partner.html", is_logged=True, user=user, items=items, is_partner=is_partner, title="Partner Profile")
@@ -292,10 +295,9 @@ def _():
 
         elif user['user_role'] == 'admin':
             query = """
-            SELECT i.*, img.image_url 
-            FROM items i 
-            LEFT JOIN item_images img ON i.item_pk = img.item_fk 
-            ORDER BY i.item_created_at
+            SELECT * FROM item_images 
+            INNER JOIN items ON item_images.item_fk = items.item_pk 
+            ORDER BY item_created_at
             """
             q = db.execute(query)
             q2 = db.execute("SELECT * FROM users WHERE user_role != 'admin'")
@@ -724,7 +726,7 @@ def _():
                     import production #type: ignore
                     path = f"/home/henrynavntoft/exam_web/images/{filename}"
                 except:
-                    path = Path(f"images/{filename}")
+                    path = f"images/{filename}"
                 
                 image.save(path) # Save the image with the new filename
 
@@ -792,7 +794,7 @@ def _():
                     import production #type: ignore
                     path = f"/home/henrynavntoft/exam_web/images/{filename}"
                 except:
-                    path = Path(f"images/{filename}")
+                    path = f"images/{filename}"
                 
                 image.save(str(path))  # Save the image with the new filename
                 
