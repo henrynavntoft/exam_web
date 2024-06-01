@@ -722,7 +722,7 @@ def _():
                 filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
                 try: 
                     import production #type: ignore
-                    path = f"henrynavntoft/images/{filename}"
+                    path = f"/home/henrynavntoft/exam_web/images/{filename}"
                 except:
                     path = Path(f"images/{filename}")
                 
@@ -790,7 +790,7 @@ def _():
                 filename = f"{item_pk}_{uuid.uuid4().hex}.{image.filename.split('.')[-1]}"
                 try: 
                     import production #type: ignore
-                    path = f"henrynavntoft/images/{filename}"
+                    path = f"/home/henrynavntoft/exam_web/images/{filename}"
                 except:
                     path = Path(f"images/{filename}")
                 
