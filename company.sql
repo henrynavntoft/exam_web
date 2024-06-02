@@ -84,6 +84,8 @@ SELECT * FROM items;
 
 
 
+
+
 ------------------------------------------------------------
 
 DROP TABLE IF EXISTS item_images;
@@ -98,8 +100,12 @@ CREATE TABLE item_images (
 SELECT * FROM item_images;
 
 
+SELECT * FROM item_images 
+        INNER JOIN items ON item_images.item_fk = items.item_pk 
+        WHERE items.item_is_blocked = 0 
+        ORDER BY item_created_at
 
------------------------------------------------------------- 
+
 
 
 

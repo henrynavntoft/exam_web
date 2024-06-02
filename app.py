@@ -145,7 +145,7 @@ def _(page_number):
         
         btn_more = template("__btn_more", page_number=next_page)
         
-        if len(items) < x.ITEMS_PER_PAGE or not user_status["is_logged"]: 
+        if len(items) < x.ITEMS_PER_PAGE: 
             btn_more = ""
         
         return f"""
