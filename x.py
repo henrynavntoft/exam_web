@@ -14,66 +14,34 @@ COOKIE_SECRET = "41ebeca46f3b-4d77-a8e2-554659075C6319a2fbfb-9a2D-4fb6-Afcad32ab
 ############################################################################################
 # Custom exceptions
 
-class HTTPException(Exception):
-    def __init__(self, default_message, status_code, custom_message=None):
-        # Combine the default message and the custom message if provided
-        if custom_message:
-            self.full_message = f"{default_message}: {custom_message}"
-        else:
-            self.full_message = default_message
-        super().__init__(self.full_message)
-        self.status_code = status_code
-    def __str__(self):
-        return f"{self.status_code} - {self.full_message}"
-
-class BadRequest(HTTPException):
-    def __init__(self, custom_message=None):
-        super().__init__("Bad request", 400, custom_message)
-
-class Unauthorized(HTTPException):
-    def __init__(self, custom_message=None):
-        super().__init__("Unauthorized", 401, custom_message)
-
-class Forbidden(HTTPException):
-    def __init__(self, custom_message=None):
-        super().__init__("Forbidden", 403, custom_message)
-
-class NotFound(HTTPException):
-    def __init__(self, custom_message=None):
-        super().__init__("Not found", 404, custom_message)
-
-class InternalServerError(HTTPException):
-    def __init__(self, custom_message=None):
-        super().__init__("Internal server error", 500, custom_message)
-
-
-###########################################################################################
 def handle_exception(ex):
-    if isinstance(ex, BadRequest):
-        response.status = ex.status_code
-        message = str(ex)
-        print(ex)
-    elif isinstance(ex, Unauthorized):
-        response.status = ex.status_code
-        message = str(ex)
-        print(ex)
-    elif isinstance(ex, Forbidden):
-        response.status = ex.status_code
-        message = str(ex)
-        print(ex)
-    elif isinstance(ex, NotFound):
-        response.status = ex.status_code
-        message = str(ex)
-        print(ex)
-    elif isinstance(ex, InternalServerError):
-        response.status = ex.status_code
-        message = str(ex)
-        print(ex)  
-    else:
-        response.status = 500
-        message = "System under maintenance"
-        print(ex)  
+    # Default status code and message
+    status_code = 500
+    message = "System under maintenance"
 
+    # Check if the exception contains a status code
+    if isinstance(ex.args, tuple) and len(ex.args) == 2:
+        message, status_code = ex.args
+    else:
+        message = str(ex)
+
+    # Map specific status codes to more detailed messages if needed
+    if status_code == 400:
+        message = f"Bad request: {message}"
+    elif status_code == 401:
+        message = f"Unauthorized: {message}"
+    elif status_code == 403:
+        message = f"Forbidden: {message}"
+    elif status_code == 404:
+        message = f"Not found: {message}"
+    elif status_code == 500:
+        message = f"Internal server error: {message}"
+
+    # Set the response status code
+    response.status = status_code
+    print(message)
+
+    # Return an HTML template snippet with the error message
     return f"""
     <template mix-target="#toast">
         <div mix-ttl="3000" class="error">
@@ -97,7 +65,7 @@ def db():
         db.row_factory = dict_factory
         return db
     except Exception as ex:
-        raise InternalServerError(str(ex))
+        return handle_exception(ex)
 
 
 ###########################################################################################
@@ -116,7 +84,7 @@ def validate_user_logged():
     if user is None: 
         response.status = 303
         response.set_header('Location', '/login')
-        raise Unauthorized("You must be logged in to do that")
+        raise Exception("You must be logged in to do that", 401)
     return user
 
 ##############################
@@ -137,8 +105,8 @@ def check_user_status():
             user_status['is_admin'] = True
         if user['user_role'] == 'partner':
             user_status['is_partner'] = True
-    except Unauthorized:
-        pass
+    except Exception as ex:
+        raise Exception("You must be logged in to do that", 401)
     
     return user_status
 
@@ -152,13 +120,9 @@ def validate_user_has_rights_to_item(user, item_pk):
         if user['user_pk'] == item['item_owner_fk'] or user['user_role'] == 'admin':
             return True
         else:
-            raise Forbidden("You do not have the rights to do that")
-    except sqlite3.Error as e:
-            raise InternalServerError(f"Database error: {e}")
-    except HTTPException as e:
-            raise e
-    except Exception as e:
-            raise BadRequest(str(e))
+            raise Exception("You do not have the rights to do that", 403)
+    except Exception as ex:
+        return handle_exception(ex)
     
 
 ##############################
@@ -169,22 +133,18 @@ def validate_user_has_rights_to_image(user, image_url):
         image = q.fetchone()
 
         if not image:
-            raise NotFound("Image not found")
+            raise Exception("Image not found", 404)
 
         item = database.execute("SELECT * FROM items WHERE item_pk = ?", (image['item_fk'],)).fetchone()
         if not item:
-            raise NotFound("Item not found")
+            raise Exception("Item not found", 404)
 
         if user['user_pk'] == item['item_owner_fk'] or user['user_role'] == 'admin':
             return True
         else:
-            raise Forbidden("You do not have the rights to do that")
-    except sqlite3.Error as e:
-        raise InternalServerError(f"Database error: {e}")
-    except HTTPException as e:
-        raise e
-    except Exception as e:
-        raise BadRequest(str(e))
+            raise Exception("You do not have the rights to do that", 403)
+    except Exception as ex:
+        return handle_exception(ex)
     
 
 ###########################################################################################
@@ -227,7 +187,7 @@ USER_PK_REGEX = "^[a-f0-9]{32}$"
 def validate_user_pk():
     user_pk = request.forms.get("user_pk", "").strip()
     if not re.match(USER_PK_REGEX, user_pk):
-        raise BadRequest("user_pk invalid")
+        raise Exception("user_pk invalid", 400)
     return user_pk
 
  
@@ -239,9 +199,9 @@ EMAIL_REGEX = "^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@(
 def validate_user_email():
     user_email = request.forms.get("user_email", "").strip()
     if not re.match(EMAIL_REGEX, user_email):
-        raise BadRequest("email invalid")
+        raise Exception("email invalid", 400)
     if len(user_email) > EMAIL_MAX:
-        raise BadRequest(f"email must be less than {EMAIL_MAX} characters")
+        raise Exception(f"email must be less than {EMAIL_MAX} characters", 400)
     return user_email
 
 ############################## USER_USERNAME VALIDATION
@@ -253,7 +213,7 @@ USER_USERNAME_REGEX = "^[a-zA-Z]{2,20}$"
 def validate_user_username():
     user_username = request.forms.get("user_username", "").strip()
     if not re.match(USER_USERNAME_REGEX, user_username):
-        raise BadRequest(f"username must be between {USER_USERNAME_MIN} and {USER_USERNAME_MAX} characters, and contain only letters")
+        raise Exception(f"username must be between {USER_USERNAME_MIN} and {USER_USERNAME_MAX} characters, and contain only letters", 400)
     return user_username
 
 ############################## USER_FIRST_NAME VALIDATION
@@ -264,7 +224,7 @@ FIRST_NAME_MAX = 20
 def validate_user_first_name():
     user_first_name = request.forms.get("user_first_name", "").strip()
     if not re.match(USER_USERNAME_REGEX, user_first_name):
-        raise BadRequest(f"First name must be between {FIRST_NAME_MIN} and {FIRST_NAME_MAX} characters, and contain only letters.")
+        raise Exception(f"First name must be between {FIRST_NAME_MIN} and {FIRST_NAME_MAX} characters, and contain only letters.", 400)
     return user_first_name
 
 
@@ -276,7 +236,7 @@ LAST_NAME_MAX = 20
 def validate_user_last_name():
     user_last_name = request.forms.get("user_last_name", "").strip()
     if not re.match(USER_USERNAME_REGEX, user_last_name):
-        raise BadRequest(f"Last name must be between {LAST_NAME_MIN} and {LAST_NAME_MAX} characters, and contain only letters.")
+        raise Exception(f"Last name must be between {LAST_NAME_MIN} and {LAST_NAME_MAX} characters, and contain only letters.", 400)
     return user_last_name
 
 ############################## USER_PASSWORD VALIDATION
@@ -288,7 +248,7 @@ USER_PASSWORD_REGEX = "^.{6,50}$"
 def validate_user_password():
     user_password = request.forms.get("user_password", "").strip()
     if not re.match(USER_PASSWORD_REGEX, user_password):
-        raise BadRequest(f"Password must be between {USER_PASSWORD_MIN} and {USER_PASSWORD_MAX} characters.")
+        raise Exception(f"Password must be between {USER_PASSWORD_MIN} and {USER_PASSWORD_MAX} characters.", 400)
     return user_password
 
 ############################## USER_CONFIRM_PASSWORD VALIDATION
@@ -297,7 +257,7 @@ def validate_user_confirm_password():
     user_password = request.forms.get("user_password", "").strip()
     user_confirm_password = request.forms.get("user_confirm_password", "").strip()
     if user_password != user_confirm_password:
-        raise BadRequest("Password and confirm password do not match.")
+        raise Exception("Password and confirm password do not match.", 400)
     return user_confirm_password
 
 
@@ -308,7 +268,7 @@ PARTNER_ROLE = "partner"
 def validate_user_role():
     user_role = request.forms.get("user_role", "").strip()
     if user_role != CUSTOMER_ROLE and user_role != PARTNER_ROLE:
-        raise BadRequest(f"The role '{user_role}' is neither '{CUSTOMER_ROLE}' nor '{PARTNER_ROLE}'")
+        raise Exception(f"The role '{user_role}' is neither '{CUSTOMER_ROLE}' nor '{PARTNER_ROLE}'", 400)
     return user_role
 
 
@@ -321,7 +281,7 @@ ITEM_PK_REGEX = "^[a-f0-9]{32}$"
 def validate_item_pk():
     item_pk = request.forms.get("item_pk", "").strip()
     if not re.match(ITEM_PK_REGEX, item_pk):
-        raise BadRequest("Item pk invalid")
+        raise Exception("Item pk invalid", 400)
     return item_pk
 
 ############################## ITEM_NAME VALIDATION
@@ -332,7 +292,7 @@ ITEM_NAME_REGEX = "^.{6,50}$"
 def validate_item_name():
     item_name = request.forms.get("item_name", "").strip()
     if not re.match(ITEM_NAME_REGEX, item_name):
-        raise BadRequest(f"Property name must be between {ITEM_NAME_MIN} and {ITEM_NAME_MAX} characters.")
+        raise Exception(f"Property name must be between {ITEM_NAME_MIN} and {ITEM_NAME_MAX} characters.", 400)
     return item_name
 
 ############################## ITEM_PRICE VALIDATION
@@ -343,7 +303,7 @@ ITEM_PRICE_REGEX = "^\d{1,8}(\.\d{1,2})?$"
 def validate_item_price_per_night():
     item_price_per_night = request.forms.get("item_price_per_night", "").strip()
     if not re.match(ITEM_PRICE_REGEX, item_price_per_night):
-        raise BadRequest(f"Price must be a number between {ITEM_PRICE_MIN} and {ITEM_PRICE_MAX} digits.")
+        raise Exception(f"Price must be a number between {ITEM_PRICE_MIN} and {ITEM_PRICE_MAX} digits.", 400)
     return item_price_per_night
 
 ############################## ITEM_DESCRIPTION VALIDATION
@@ -354,7 +314,7 @@ ITEM_DESCRIPTION_REGEX = "^.{6,200}$"
 def validate_item_description():
     item_description = request.forms.get("item_description", "").strip()
     if not re.match(ITEM_DESCRIPTION_REGEX, item_description):
-        raise BadRequest(f"Description must be between {ITEM_DESCRIPTION_MIN} and {ITEM_DESCRIPTION_MAX} characters.")
+        raise Exception(f"Description must be between {ITEM_DESCRIPTION_MIN} and {ITEM_DESCRIPTION_MAX} characters.", 400)
     return item_description
 
 ############################## ITEM_IMAGES VALIDATION 
@@ -369,28 +329,28 @@ def validate_item_images():
 
     # Ensure that the number of images is within the allowed range
     if not item_images:
-        raise BadRequest(f"No images uploaded. Must upload between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX} images.")
+        raise Exception(f"No images uploaded. Must upload between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX} images.", 400)
     
     if len(item_images) < ITEM_IMAGES_MIN or len(item_images) > ITEM_IMAGES_MAX:
-        raise BadRequest(f"Invalid number of images, must be between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX}")
+        raise Exception(f"Invalid number of images, must be between {ITEM_IMAGES_MIN} and {ITEM_IMAGES_MAX}", 400)
 
     allowed_extensions = {'.png', '.jpg', '.jpeg', '.webp'}
     for image in item_images:
         # Check if the filename is empty
         if not image.filename:
-            raise BadRequest("Image file name is empty")
+            raise Exception("Image file name is empty", 400)
         
         # Check the image extension
         extension = pathlib.Path(image.filename).suffix.lower()
         if extension == "":
-            raise BadRequest("No images provided")
+            raise Exception("No images provided", 400)
         if extension not in allowed_extensions:
-            raise BadRequest("Invalid image extension")
+            raise Exception("Invalid image extension", 400)
 
         # Read the file into memory and check its size
         file_in_memory = BytesIO(image.file.read())
         if len(file_in_memory.getvalue()) > ITEM_IMAGE_MAX_SIZE:
-            raise BadRequest("Image size exceeds the maximum allowed size of 5MB")
+            raise Exception("Image size exceeds the maximum allowed size of 5MB", 400)
 
         # Go back to the start of the file for further operations
         image.file.seek(0)
@@ -417,12 +377,12 @@ def validate_item_images_no_image_ok():
         if extension == "":
             return "no-image"
         if extension not in allowed_extensions:
-            raise BadRequest("Invalid image extension")
+            raise Exception("Invalid image extension", 400)
 
         # Read the file into memory and check its size
         file_in_memory = BytesIO(image.file.read())
         if len(file_in_memory.getvalue()) > ITEM_IMAGE_MAX_SIZE:
-            raise BadRequest("Image size exceeds the maximum allowed size of 5MB")
+            raise Exception("Image size exceeds the maximum allowed size of 5MB", 400)
 
         # Go back to the start of the file for further operations
         image.file.seek(0)
@@ -450,13 +410,15 @@ def send_verification_email(from_email, to_email, verification_id):
         message["From"] = to_email
         message["Subject"] = 'Verify your account'
 
-        email_body= f""" 
-                        <body>
-                            <h1>You need to verify your account</h1>
-                            <p>Click the link below to verify your account:</p>
-                            <a href="{base_url}/activate_user/{verification_id}">Activate user </a>
-                        </body>
-            """
+        email_body = f""" 
+            <html>
+            <body>
+                <h1>Welcome to BottleBnB!</h1>
+                <p>Thank you for signing up. To activate your account, please click the link below:</p>
+                <a href="{base_url}/activate_user/{verification_id}">Activate Account</a>
+            </body>
+            </html>
+        """
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
@@ -474,8 +436,7 @@ def send_verification_email(from_email, to_email, verification_id):
  
         server.quit()
     except Exception as ex:
-        print(ex)
-        return "error"
+        return handle_exception(ex)
     
 
 
@@ -487,13 +448,13 @@ def send_password_reset_email(from_email, to_email, user_pk):
         message["From"] = to_email
         message["Subject"] = 'Password Reset'
 
-        email_body= f""" 
-<body>
-    <h1>Reset Your Password</h1>
-    <p>Click the link below to reset your password:</p>
-    <a href="{base_url}/reset_password/{user_pk}">Reset Password</a>
-</body>
-            """
+        email_body = f""" 
+        <body>
+            <h1>Reset Your Password</h1>
+            <p>Click the link below to reset your password:</p>
+            <a href="{base_url}/reset_password/{user_pk}">Reset Password</a>
+        </body>
+        """
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
@@ -508,8 +469,7 @@ def send_password_reset_email(from_email, to_email, user_pk):
         server.sendmail(from_email, to_email, message.as_string())
         server.quit()
     except Exception as ex:
-        print(ex)
-        return "error"
+        return handle_exception(ex)
     
 
 
@@ -522,11 +482,11 @@ def send_confirm_delete(from_email, to_email, user_pk):
         message["Subject"] = 'Your profile has been deleted'
 
 
-        email_body= f""" 
-<body>
-    <h1>Your profile has been deleted</h1>
-</body>
-            """
+        email_body = """
+        <body>
+            <h1>Your profile has been deleted</h1>
+        </body>
+        """
  
         messageText = MIMEText(email_body, 'html')
         message.attach(messageText)
@@ -541,8 +501,7 @@ def send_confirm_delete(from_email, to_email, user_pk):
         server.sendmail(from_email, to_email, message.as_string())
         server.quit()
     except Exception as ex:
-        print(ex)
-        return "error"
+        return handle_exception(ex)
 
 
 ############################## USER BLOCKED EMAIL
@@ -572,9 +531,7 @@ def user_blocked(from_email, to_email, user_pk):
         server.sendmail(from_email, to_email, message.as_string())
         server.quit()
     except Exception as ex:
-        print(ex)
-        return "error"
-    
+        return handle_exception(ex)
 
 
 ############################## USER UNBLOCKED EMAIL
@@ -606,8 +563,7 @@ def user_unblocked(from_email, to_email, user_pk):
         server.sendmail(from_email, to_email, message.as_string())
         server.quit()
     except Exception as ex:
-        print(ex)
-        return "error"
+        return handle_exception(ex)
 
 ############################## ITEM BLOCKED EMAIL
 def item_blocked (from_email, to_email, item_pk):
@@ -637,8 +593,7 @@ def item_blocked (from_email, to_email, item_pk):
         server.sendmail(from_email, to_email, message.as_string())
         server.quit()
     except Exception as ex:
-        print(ex)
-        return "error"
+        return handle_exception(ex)
 
 
 
@@ -671,8 +626,7 @@ def item_unblocked (from_email, to_email, item_pk):
         server.sendmail(from_email, to_email, message.as_string())
         server.quit()
     except Exception as ex:
-        print(ex)
-        return "error"
+        return handle_exception(ex)
 
 
 
@@ -689,8 +643,7 @@ def db_arango(query):
         print(res)
         print(res.text)
         return res.json()
+    
     except Exception as ex:
-        print("#"*50)
-        print(ex)
-    finally:
-        pass
+        return handle_exception(ex)
+    

@@ -193,7 +193,7 @@ def _(item_pk):
     
         
         if not item:
-            raise x.NotFound("Item not found")
+            raise Exception("Item not found", 404)
         
 
         return template("property.html", item=item, is_logged=user_status["is_logged"], is_customer=user_status["is_customer"])
@@ -371,7 +371,7 @@ def _():
         user = x.validate_user_logged()
 
         if user['user_role'] == 'admin':
-            raise x.Forbidden("Admins cannot delete their profiles")
+            raise Exception("Admins cannot delete their profiles", 403)
 
         db = x.db()
         
@@ -420,8 +420,7 @@ def _():
 
 
         if user_password != user_confirm_password:
-            response.status = 400
-            return "New password and confirm password do not match"
+            raise Exception("Passwords do not match", 400)
         
 
         # this makes user_password into a byte string
@@ -431,19 +430,13 @@ def _():
         salt = bcrypt.gensalt()
         # Hashing the password
         hashed = bcrypt.hashpw(password, salt)
-        # printing the salt
-        print("Salt :")
-        print(salt)
         
-        # printing the hashed
-        print("Hashed")
-        print(hashed)    
-
+        # Convert the hashed password to a string
         hashed_str = hashed.decode('utf-8')
 
 
         db = x.db()
-        q = db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_deleted_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (user_pk, user_username, user_first_name, user_last_name, user_email, hashed_str, user_role, user_created_at, "0", "0", "0", "0"))
+        db.execute("INSERT INTO users (user_pk, user_username, user_first_name, user_last_name, user_email, user_password, user_role, user_created_at, user_updated_at, user_deleted_at, user_is_verified, user_is_blocked) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (user_pk, user_username, user_first_name, user_last_name, user_email, hashed_str, user_role, user_created_at, "0", "0", "0", "0"))
         db.commit()
 
         x.send_verification_email(x.SENDER_EMAIL, user_email, user_pk)
@@ -491,7 +484,7 @@ def _():
             </template>
             """
         else:
-            raise x.Forbidden("User is not an admin")
+            raise Exception("User is not an admin", 403)
         
     except Exception as ex:
         return x.handle_exception(ex)
@@ -517,7 +510,7 @@ def _():
             </template>
             """
         else:
-            raise x.Forbidden("User is not an admin")
+            raise Exception("User is not an admin", 403)
     except Exception as ex:
         return x.handle_exception(ex)
     finally:
@@ -538,18 +531,19 @@ def _():
         q = db.execute("SELECT * FROM users WHERE user_email = ? LIMIT 1", (user_email,))
         
         user = q.fetchone()
-        
-        if not user: raise x.NotFound("user not found")
 
-        if user["user_is_verified"] != 1:
-            raise x.BadRequest("User is not verified")
-        if user["user_is_blocked"] != 0:
-            raise x.BadRequest("User is blocked")
-        if user["user_deleted_at"] != 0:
-            raise x.BadRequest("User not found")
+        if not user:
+            raise Exception("User not found", 404)
+        if user.get("user_is_verified") != 1:
+            raise Exception("User is not verified", 403)
+        if user.get("user_is_blocked") != 0:
+            raise Exception("User is blocked", 403)
+        if user.get("user_deleted_at") != 0:
+            raise Exception("User is not found", 404)
         
 
-        if not bcrypt.checkpw(user_password.encode(), user["user_password"].encode()): raise x.Unauthorized("Invalid credentials")
+        if not bcrypt.checkpw(user_password.encode(), user["user_password"].encode()): raise Exception ("Invalid credentials", 400)
+        
         user.pop("user_password") # Do not put the user's password in the cookie
         
         try:
@@ -580,7 +574,7 @@ def _():
         q = db.execute("SELECT * FROM users WHERE user_email = ? LIMIT 1", (user_email,))
         user = q.fetchone()
         if not user:
-            raise x.NotFound("User not found")
+            raise Exception("User not found", 404)
         user_pk = user["user_pk"]
         x.send_password_reset_email('henrylnavntoft@gmail.com', user_email, user_pk)
         return """
@@ -604,7 +598,7 @@ def _(id):
         q = db.execute("SELECT * FROM users WHERE user_pk = ?", (id,))
         user = q.fetchone()
         if not user:
-            raise x.NotFound("User not found")
+            raise Exception("User not found", 404)
         return template("reset_password.html", user=user, id=id)
     except Exception as ex:
         print(ex)
@@ -630,7 +624,7 @@ def _():
     try:
         user = x.validate_user_logged()
         if user['user_role'] != "partner":
-            raise x.Forbidden("User is not a partner")
+            raise Exception("User is not a partner", 403)
         else:
             
 
@@ -730,9 +724,9 @@ def _():
         if new_images != "no-image":
             total_images = old_image_count + len(new_images)
             if total_images > 5:
-                raise x.BadRequest("Total number of images exceeds the maximum allowed 5")
+                raise Exception("Total number of images exceeds the maximum allowed 5", 400)
             elif total_images < 1:
-                raise x.BadRequest("There must be at least 1 image for the item.")
+                raise Exception("There must be at least 1 image for the item.", 400)
 
             # Process each new image, rename it, save it, and store the filename in the database
             for image in new_images:
@@ -775,7 +769,7 @@ def _(image_url):
         # Fetch the image row
         image_row = db.execute("SELECT * FROM item_images WHERE image_url = ?", (image_url,)).fetchone()
         if not image_row:
-            raise x.NotFound("Image not found")
+            raise Exception("Image not found", 400)
 
         # Fetch all images associated with the item
         all_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (image_row['item_fk'],)).fetchall()
@@ -783,7 +777,7 @@ def _(image_url):
         # Check how many images are left
         remaining_images = len(all_images)
         if remaining_images <= 1:
-            raise x.BadRequest("Cannot delete the last image of an item.")
+            raise Exception("Cannot delete the last image of an item.", 400)
 
         # Delete the image file if it exists
         path = Path(f"images/{image_url}")
@@ -849,7 +843,7 @@ def _():
     try:
         user = x.validate_user_logged()
         if user['user_role'] != "customer":
-            raise x.Unauthorized("User is not a customer")
+            raise Exception("User is not a customer", 403)
         else:
             item_pk = x.validate_item_pk()
             db = x.db()
@@ -871,7 +865,7 @@ def _():
     try:
         user = x.validate_user_logged()
         if user['user_role'] != "customer":
-            raise x.Unauthorized("User is not a customer")
+            raise Exception("User is not a customer", 403)
         else:
             item_pk = x.validate_item_pk()
             db = x.db()
@@ -893,11 +887,20 @@ def _():
 def _():
     try:
         item_pk = x.validate_item_pk()
+
+        db = x.db()
+
+        item = db.execute("SELECT * FROM items WHERE item_pk = ?", (item_pk,)).fetchone()
+        if not item:
+            raise Exception("Item not found", 404)
+        
         user = x.validate_user_logged()
+
+        if user['user_role'] != "admin":
+            raise Exception("User is not an admin", 403)
+        
         x.validate_user_has_rights_to_item(user, item_pk)
         
-        
-        db = x.db()
 
         # Update the item to set it as blocked
         db.execute("UPDATE items SET item_is_blocked = 1 WHERE item_pk = ?", (item_pk,))
@@ -913,7 +916,7 @@ def _():
         user_info = q.fetchone()
         
         if not user_info:
-            raise x.NotFound("User not found")
+            raise Exception("User not found", 404)
         
         user_email = user_info['user_email']
         
@@ -936,13 +939,25 @@ def _():
 def _():
     try:
         item_pk = x.validate_item_pk()
+
+        db = x.db()
+
+        item = db.execute("SELECT * FROM items WHERE item_pk = ?", (item_pk,)).fetchone()
+        if not item:
+            raise Exception("Item not found", 404)
+        
         user = x.validate_user_logged()
+        if user['user_role'] != "admin":
+            raise Exception("User is not an admin", 403)
+
         x.validate_user_has_rights_to_item(user, item_pk)
         
-        db = x.db()
+        
         
         # Update the item to set it as blocked
         db.execute("UPDATE items SET item_is_blocked = 0 WHERE item_pk = ?", (item_pk,))
+
+        
         
         # Retrieve the owner's email directly from the users table using the item_owner field from the items table
         query = """
@@ -955,7 +970,7 @@ def _():
         user_info = q.fetchone()
         
         if not user_info:
-            raise x.NotFound("User not found")
+            raise Exception("User not found", 404)
         
         user_email = user_info['user_email']
         
