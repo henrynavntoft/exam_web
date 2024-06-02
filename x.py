@@ -114,9 +114,33 @@ def no_cache():
 def validate_user_logged():
     user = request.get_cookie("user", secret=COOKIE_SECRET)
     if user is None: 
+        response.status = 303
+        response.set_header('Location', '/login')
         raise Unauthorized("You must be logged in to do that")
     return user
 
+##############################
+def check_user_status():
+    user_status = {
+        'is_logged': False,
+        'is_customer': False,
+        'is_admin': False,
+        'is_partner': False
+    }
+    
+    try:
+        user = validate_user_logged()
+        user_status['is_logged'] = True
+        if user['user_role'] == 'customer':
+            user_status['is_customer'] = True
+        if user['user_role'] == 'admin':
+            user_status['is_admin'] = True
+        if user['user_role'] == 'partner':
+            user_status['is_partner'] = True
+    except Unauthorized:
+        pass
+    
+    return user_status
 
 ############################## 
 def validate_user_has_rights_to_item(user, item_pk):
@@ -162,6 +186,35 @@ def validate_user_has_rights_to_image(user, image_url):
     except Exception as e:
         raise BadRequest(str(e))
     
+
+###########################################################################################
+
+############################## GROUP ITEMS WITH IMAGES
+def group_items_with_images(rows):
+    items = {}
+    for row in rows:
+        item_pk = row['item_pk']
+        if item_pk not in items:
+            items[item_pk] = {
+                'item_pk': row['item_pk'],
+                'item_name': row['item_name'],
+                'item_description': row['item_description'],
+                'item_splash_image': row['item_splash_image'],
+                'item_price_per_night': row['item_price_per_night'],
+                'item_lat': row['item_lat'],
+                'item_lon': row['item_lon'],
+                'item_stars': row['item_stars'],
+                'item_created_at': row['item_created_at'],
+                'item_updated_at': row['item_updated_at'],
+                'item_deleted_at': row['item_deleted_at'],
+                'item_is_blocked': row['item_is_blocked'],
+                'item_is_booked': row['item_is_booked'],
+                'item_images': []
+            }
+        if row['image_url']:
+            items[item_pk]['item_images'].append(row['image_url'])
+
+    return list(items.values())
 
 
 
@@ -382,6 +435,12 @@ def validate_item_images_no_image_ok():
 
 SENDER_EMAIL = "henrylnavntoft@gmail.com"
 
+try:
+    import production #type: ignore
+    base_url = "https://henrynavntoft.pythonanywhere.com"
+except:
+    base_url =   "http://0.0.0.0"
+
 ############################## VERIFY USER EMAIL
 def send_verification_email(from_email, to_email, verification_id):
     try:
@@ -391,30 +450,12 @@ def send_verification_email(from_email, to_email, verification_id):
         message["From"] = to_email
         message["Subject"] = 'Verify your account'
 
-        try:
-            import production #type: ignore
-            base_url = "https://henrynavntoft.pythonanywhere.com"
-        except:
-            base_url =   "http://0.0.0.0"
-
-
         email_body= f""" 
-                        <!DOCTYPE html>
-                        <html lang="en">
-                        <head>
-                            <meta charset="UTF-8" />
-                            <meta
-                            name="viewport"
-                            content="width=device-width, initial-scale=1.0"
-                            />
-                            <title>Verification Email</title>
-                        </head>
                         <body>
                             <h1>You need to verify your account</h1>
                             <p>Click the link below to verify your account:</p>
                             <a href="{base_url}/activate_user/{verification_id}">Activate user </a>
                         </body>
-                        </html>
             """
  
         messageText = MIMEText(email_body, 'html')
@@ -445,31 +486,13 @@ def send_password_reset_email(from_email, to_email, user_pk):
         message["To"] = from_email
         message["From"] = to_email
         message["Subject"] = 'Password Reset'
-        
-        try:
-            import production #type: ignore
-            base_url = "https://henrynavntoft.pythonanywhere.com"
-        except:
-            base_url =   "http://0.0.0.0"
-
 
         email_body= f""" 
-                        <!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Reset Password Email</title>
-</head>
-
 <body>
     <h1>Reset Your Password</h1>
     <p>Click the link below to reset your password:</p>
     <a href="{base_url}/reset_password/{user_pk}">Reset Password</a>
 </body>
-
-</html>
             """
  
         messageText = MIMEText(email_body, 'html')
@@ -500,20 +523,9 @@ def send_confirm_delete(from_email, to_email, user_pk):
 
 
         email_body= f""" 
-                        <!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Your profile has been deleted</title>
-</head>
-
 <body>
     <h1>Your profile has been deleted</h1>
 </body>
-
-</html>
             """
  
         messageText = MIMEText(email_body, 'html')
@@ -541,21 +553,10 @@ def user_blocked(from_email, to_email, user_pk):
         message["From"] = to_email
         message["Subject"] = 'Your profile has been blocked'
         email_body= f""" 
-                    <!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Your user has been blocked</title>
-</head>
-
 <body>
     <h1>Your user has been blocked</h1>
 
 </body>
-
-</html>
             """
  
         messageText = MIMEText(email_body, 'html')
@@ -584,21 +585,12 @@ def user_unblocked(from_email, to_email, user_pk):
         message["From"] = to_email
         message["Subject"] = 'Your profile has been unblocked'
         email_body = f"""
-        <!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Your user has been unblocked</title>
-</head>
 
 <body>
     <h1>Your user has been unblocked</h1>
 
 </body>
 
-</html>
         """
  
         messageText = MIMEText(email_body, 'html')
@@ -625,21 +617,11 @@ def item_blocked (from_email, to_email, item_pk):
         message["From"] = to_email
         message["Subject"] = 'Your property has been blocked'
         email_body = f"""
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Your item has been blocked</title>
-</head>
 
 <body>
     <h1>Your item has been blocked</h1>
 
 </body>
-
-</html>
 """
  
         messageText = MIMEText(email_body, 'html')
@@ -668,21 +650,12 @@ def item_unblocked (from_email, to_email, item_pk):
         message["From"] = to_email
         message["Subject"] = 'Your property has been unblocked'
         email_body = f"""
-<!DOCTYPE html>
-<html lang="en">
-
-<head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Your item has been unblocked</title>
-</head>
 
 <body>
     <h1>Your item has been unblocked</h1>
 
 </body>
 
-</html>
 """
  
         messageText = MIMEText(email_body, 'html')
@@ -702,35 +675,6 @@ def item_unblocked (from_email, to_email, item_pk):
         return "error"
 
 
-
-###########################################################################################
-
-############################## GROUP ITEMS WITH IMAGES
-def group_items_with_images(rows):
-    items = {}
-    for row in rows:
-        item_pk = row['item_pk']
-        if item_pk not in items:
-            items[item_pk] = {
-                'item_pk': row['item_pk'],
-                'item_name': row['item_name'],
-                'item_description': row['item_description'],
-                'item_splash_image': row['item_splash_image'],
-                'item_price_per_night': row['item_price_per_night'],
-                'item_lat': row['item_lat'],
-                'item_lon': row['item_lon'],
-                'item_stars': row['item_stars'],
-                'item_created_at': row['item_created_at'],
-                'item_updated_at': row['item_updated_at'],
-                'item_deleted_at': row['item_deleted_at'],
-                'item_is_blocked': row['item_is_blocked'],
-                'item_is_booked': row['item_is_booked'],
-                'item_images': []
-            }
-        if row['image_url']:
-            items[item_pk]['item_images'].append(row['image_url'])
-
-    return list(items.values())
 
 
 

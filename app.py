@@ -72,7 +72,7 @@ def _():
     response.status = 303
     response.set_header('Location', '/login')
     return
-  
+
 
 ############################## HOME
 ##############################
@@ -81,22 +81,7 @@ def _():
     try:
         db = x.db()
         
-        is_logged = False
-        is_customer = False
-        is_admin = False
-        is_partner = False
-        
-        try:    
-            user = x.validate_user_logged()
-            is_logged = True
-            if user['user_role'] == 'customer':
-                is_customer = True
-            if user['user_role'] == 'admin':
-                is_admin = True
-            if user['user_role'] == 'partner':
-                is_partner = True
-        except x.Unauthorized:
-            pass
+        user_status = x.check_user_status()
 
         
         query = """
@@ -117,7 +102,7 @@ def _():
         items = items[:x.ITEMS_PER_PAGE]
 
         return template("index.html", items=items, mapbox_token=credentials.mapbox_token, 
-                        is_logged=is_logged, is_customer=is_customer)
+                        is_logged=user_status["is_logged"], is_customer=user_status["is_customer"])
     
     except Exception as ex:
          return x.handle_exception(ex)
@@ -131,22 +116,7 @@ def _():
 def _(page_number):
     try:
         
-        is_logged = False
-        is_customer = False
-        is_admin = False
-        is_partner = False
-        
-        try:    
-            user = x.validate_user_logged()
-            is_logged = True
-            if user['user_role'] == 'customer':
-                is_customer = True
-            if user['user_role'] == 'admin':
-                is_admin = True
-            if user['user_role'] == 'partner':
-                is_partner = True
-        except x.Unauthorized:
-            pass
+        user_status = x.check_user_status()
 
         db = x.db()
 
@@ -172,11 +142,11 @@ def _(page_number):
         html = ""
         
         for item in items: 
-            html += template("_item", item=item, is_logged=is_logged, is_customer=is_customer)    
+            html += template("_item", item=item, is_logged=user_status["is_logged"], is_customer=user_status["is_customer"])    
         
         btn_more = template("__btn_more", page_number=next_page)
         
-        if len(items) < x.ITEMS_PER_PAGE or not is_logged: 
+        if len(items) < x.ITEMS_PER_PAGE or not user_status["is_logged"]: 
             btn_more = ""
         
         return f"""
@@ -203,24 +173,7 @@ def _(page_number):
 @get("/property/<item_pk>")
 def _(item_pk):
     try:
-        is_logged = False
-        is_customer = False
-        is_admin = False
-        is_partner = False
-        
-        try:    
-            user = x.validate_user_logged()
-            is_logged = True
-            if user['user_role'] == 'customer':
-                is_customer = True
-            if user['user_role'] == 'admin':
-                is_admin = True
-            if user['user_role'] == 'partner':
-                is_partner = True
-        except x.Unauthorized:
-            pass
-
-        
+        user_status = x.check_user_status()
 
         db = x.db()
 
@@ -243,7 +196,7 @@ def _(item_pk):
             raise x.NotFound("Item not found")
         
 
-        return template("property.html", item=item, is_logged=is_logged, is_customer=is_customer)
+        return template("property.html", item=item, is_logged=user_status["is_logged"], is_customer=user_status["is_customer"])
     except Exception as ex:
         return x.handle_exception(ex)
     finally:
@@ -255,21 +208,19 @@ def _(item_pk):
 @get("/profile")
 def _():
     try:
-        # Prevent caching
         x.no_cache()
 
-        # Validate if the user is logged in and retrieve user data
-        user = x.validate_user_logged()
-       
+        user_status = x.check_user_status()
 
-        # Access the database
+        user = x.validate_user_logged()
+
+        if not user_status['is_logged']:
+            return
+
         db = x.db()
 
-        # Check the user's role and serve the corresponding template
-        if user['user_role'] == 'partner':
-            is_partner = True
-            # Partners get a partner-specific profile with their items
-            
+        # If user is a partner
+        if user_status['is_partner']:
             query = """
             SELECT *
             FROM item_images
@@ -277,40 +228,38 @@ def _():
             WHERE items.item_owner_fk = ? AND items.item_is_blocked = 0
             ORDER BY item_created_at
             """
-            
+
             q = db.execute(query, (user['user_pk'],))
             
             rows = q.fetchall()
             
             items = x.group_items_with_images(rows)
 
-            return template("profile_partner.html", is_logged=True, user=user, items=items, is_partner=is_partner, title="Partner Profile")
-  
-
-        elif user['user_role'] == 'customer':
-            # Customers get a customer-specific profile
-            return template("profile_customer.html", is_logged=True, user=user, title="Customer Profile")
-  
-
-        elif user['user_role'] == 'admin':
+            return template("profile_partner.html", is_logged=user_status['is_logged'], user=user, items=items, is_partner=user_status['is_partner'], title="Partner Profile")
+        
+        # If user is a customer
+        if user_status['is_customer']:
+            return template("profile_customer.html", is_logged=user_status['is_logged'], user=user, title="Customer Profile")
+        
+        # If user is an admin
+        if user_status['is_admin']:
             query = """
             SELECT * FROM item_images 
             INNER JOIN items ON item_images.item_fk = items.item_pk 
             ORDER BY item_created_at
             """
             q = db.execute(query)
+            
             q2 = db.execute("SELECT * FROM users WHERE user_role != 'admin'")
+            
             rows = q.fetchall()
+            
             users = q2.fetchall()
-            is_admin = user['user_role'] == 'admin'
 
-            # Group items with their images
             items = x.group_items_with_images(rows)
 
+            return template("profile.html", is_logged=user_status['is_logged'], items=items, user=user, users=users, is_admin=user_status['is_admin'], title="Admin Profile")
 
-            # Render a template with item information for admin
-            return template("profile.html", is_logged=True, items=items, user=user, users=users, is_admin=is_admin, title="Admin Profile")
-   
     except x.Unauthorized as ex:
         response.status = 303
         response.set_header('Location', '/login')
@@ -367,7 +316,6 @@ def _():
 @put("/edit_password")
 def _():
     try:
-        user = x.validate_user_logged()
 
         # Get the updated password and confirm password from the form
         user_pk = x.validate_user_pk()
@@ -1049,6 +997,27 @@ def _():
         return x.handle_exception(ex)
     finally:
         pass
+
+# Get user by user_id
+##############################
+@get("/arangodb/user/<user_id>")
+def _(user_id):
+    try:
+        # Fetch the user from the database
+        user = x.db_arango({"query": "FOR user IN users FILTER user.user_id == @user_id RETURN user", "bindVars": {"user_id": int(user_id)}})
+        
+        # Check if user is fetched successfully
+        if user and "result" in user and user["result"]:
+            # Return the user as JSON
+            return {"status": "success", "data": user["result"][0]}
+        else:
+            response.status = 404
+            return {"status": "failure", "message": "User not found"}
+    except Exception as ex:
+        return x.handle_exception(ex)
+    finally:
+        pass
+
 
 # Create a new user
 ##############################
