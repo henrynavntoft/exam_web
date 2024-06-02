@@ -608,7 +608,6 @@ def item_unblocked (from_email, to_email, item_pk):
 
 <body>
     <h1>Your item has been unblocked</h1>
-
 </body>
 
 """
