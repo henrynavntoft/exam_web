@@ -82,9 +82,7 @@ def no_cache():
 def validate_user_logged():
     user = request.get_cookie("user", secret=COOKIE_SECRET)
     if user is None: 
-        response.status = 303
-        response.set_header('Location', '/login')
-        raise Exception("You must be logged in to do that", 401)
+        raise Exception("User not logged in", 401)
     return user
 
 ##############################
@@ -106,7 +104,7 @@ def check_user_status():
         if user['user_role'] == 'partner':
             user_status['is_partner'] = True
     except Exception as ex:
-        raise Exception("You must be logged in to do that", 401)
+        pass
     
     return user_status
 

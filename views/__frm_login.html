@@ -4,14 +4,14 @@
 
     <div>
         <label for="user_email">Email:</label>
-        <input name="user_email" id="user_email" class="w-full border" type="email" placeholder="email"
-            value="henrylnavntoft@gmail.com" mix-check="{{x.EMAIL_REGEX}}">
+        <input name="user_email" id="user_email" class="w-full border" type="email" placeholder="" value=""
+            mix-check="{{x.EMAIL_REGEX}}">
     </div>
 
     <div>
         <label for="user_password">Password:</label>
-        <input name="user_password" id="user_password" class="w-full border" type="password" placeholder="password"
-            value="password" mix-check="{{x.USER_PASSWORD_REGEX}}">
+        <input name="user_password" id="user_password" class="w-full border" type="password" placeholder="" value=""
+            mix-check="{{x.USER_PASSWORD_REGEX}}">
     </div>
 
     <button class="" mix-data="#frm_login" mix-post="/login" mix-default="Login" mix-await="Please wait ...">

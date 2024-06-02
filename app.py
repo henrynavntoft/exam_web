@@ -67,7 +67,6 @@ def _():
 ##############################
 @get("/logout")
 def _():
-    x.no_cache()
     response.delete_cookie("user")
     response.status = 303
     response.set_header('Location', '/login')
@@ -260,12 +259,11 @@ def _():
 
             return template("profile.html", is_logged=user_status['is_logged'], items=items, user=user, users=users, is_admin=user_status['is_admin'], title="Admin Profile")
 
-    except x.Unauthorized as ex:
+    except Exception as ex:
         response.status = 303
         response.set_header('Location', '/login')
         return
-    except Exception as ex:
-        return x.handle_exception(ex)
+
     finally:
         if "db" in locals():
             db.close()
@@ -302,12 +300,11 @@ def _():
         <template mix-redirect="/profile">
         </template>
         """   
-    except x.Unauthorized as ex:
+    except Exception as ex:
         response.status = 303
         response.set_header('Location', '/login')
         return
-    except Exception as ex:
-        return x.handle_exception(ex)
+    
     finally:
         if "db" in locals(): db.close()
 
@@ -388,12 +385,12 @@ def _():
         </template>
         """
         
-    except x.Unauthorized as ex:
+    except Exception as ex:
+        print(ex)
         response.status = 303
         response.set_header('Location', '/login')
         return
-    except Exception as ex:
-        return x.handle_exception(ex)
+    
     
     finally:
         if "db" in locals(): 
