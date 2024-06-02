@@ -4,8 +4,8 @@
 
 <section class="item" id="item-{{item['item_pk']}}">
     <div class="image-gallery">
-        % for image_url in item['item_images']:
-        <img alt="" src="/images/{{image_url}}" alt="{{item['item_name']}}"
+        % if item['item_images']:
+        <img alt="{{item['item_name']}}" src="/images/{{item['item_images'][0]}}"
             class="w-full h-48 aspect-square object-cover rounded-lg cursor-pointer mb-2">
         % end
     </div>
