@@ -1072,27 +1072,37 @@ def _(user_id):
     try:
         # Fetch the user data from the request body
         user_data = request.json
-        
+
         # Check if user data is provided
         if not user_data:
             response.status = 400
             return {"status": "failure", "message": "User data is required"}
 
-        # Fetch the user from the database
-        user = x.db_arango({"query": "FOR user IN users FILTER user._id == @user_id RETURN user", "bindVars": {"user_id": user_id}})
+        # Fetch the user from the database to check if it exists
+        user = x.db_arango({
+            "query": "FOR user IN users FILTER user.user_id == @user_id RETURN user",
+            "bindVars": {"user_id": int(user_id)}
+        })
+        
         if not user or "result" not in user or not user["result"]:
             response.status = 404
             return {"status": "failure", "message": "User not found"}
-        
+
         # Perform the update operation
         update_query = """
             FOR user IN users
-            FILTER user._id == @user_id
+            FILTER user.user_id == @user_id
             UPDATE user WITH @user_data IN users
             RETURN NEW
         """
-        res = x.db_arango({"query": update_query, "bindVars": {"user_id": user_id, "user_data": user_data}})
-        
+        res = x.db_arango({
+            "query": update_query,
+            "bindVars": {
+                "user_id": int(user_id),
+                "user_data": user_data
+            }
+        })
+
         if res and "result" in res:
             updated_user = res["result"][0]
             return {"status": "success", "data": updated_user}
