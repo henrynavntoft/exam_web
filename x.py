@@ -15,17 +15,14 @@ COOKIE_SECRET = "41ebeca46f3b-4d77-a8e2-554659075C6319a2fbfb-9a2D-4fb6-Afcad32ab
 # Custom exceptions
 
 def handle_exception(ex):
-    # Default status code and message
     status_code = 500
     message = "System under maintenance"
 
-    # Check if the exception contains a status code
     if isinstance(ex.args, tuple) and len(ex.args) == 2:
         message, status_code = ex.args
     else:
         message = str(ex)
 
-    # Map specific status codes to more detailed messages if needed
     if status_code == 400:
         message = f"Bad request: {message}"
     elif status_code == 401:
@@ -37,11 +34,9 @@ def handle_exception(ex):
     elif status_code == 500:
         message = f"Internal server error: {message}"
 
-    # Set the response status code
     response.status = status_code
     print(message)
 
-    # Return an HTML template snippet with the error message
     return f"""
     <template mix-target="#toast">
         <div mix-ttl="3000" class="error">

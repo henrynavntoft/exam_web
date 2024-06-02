@@ -94,10 +94,8 @@ def _():
 
         rows = q.fetchall()
         
-        # Group items with their images
         items = x.group_items_with_images(rows)
 
-        # Apply limit after grouping
         items = items[:x.ITEMS_PER_PAGE]
 
         return template("index.html", items=items, mapbox_token=credentials.mapbox_token, 
@@ -176,7 +174,6 @@ def _(item_pk):
 
         db = x.db()
 
-        # Fetch the item
         query = """
         SELECT * FROM item_images 
         INNER JOIN items ON item_images.item_fk = items.item_pk 
@@ -309,33 +306,29 @@ def _():
         if "db" in locals(): db.close()
 
 
-##############################  EDIT PASSWORD # TODO: VALIDATE ONLY USER CAN CHANGE??
+##############################  EDIT PASSWORD
 @put("/edit_password")
 def _():
     try:
 
-        # Get the updated password and confirm password from the form
         user_pk = x.validate_user_pk()
         user_password = x.validate_user_password()
-        x.validate_user_confirm_password()
+        user_confrim_password = x.validate_user_confirm_password()
         user_updated_at = epoch.time()
 
+        if user_password != user_confrim_password:
+            raise Exception("Passwords do not match", 400)
+
         
-         # this makes user_password into a byte string
+        # this makes user_password into a byte string
         password = user_password.encode() 
         
         # Adding the salt to password
         salt = bcrypt.gensalt()
         # Hashing the password
         hashed = bcrypt.hashpw(password, salt)
-        # printing the salt
-        print("Salt :")
-        print(salt)
         
-        # printing the hashed
-        print("Hashed")
-        print(hashed)    
-
+        # Convert the hashed password to a string
         hashed_str = hashed.decode('utf-8')
         
         db = x.db()
@@ -615,7 +608,7 @@ def _(id):
 
 
 ############################## ITEMS
-##############################  TODO: TEST IN POSTMAN
+############################## ADD ITEM
 @post("/add_item")
 def _():
     try:
@@ -996,7 +989,9 @@ def _():
 def _():
     try:
         # Query to fetch all users
-        users = x.db_arango({"query": "FOR user IN users RETURN user"})
+        users = x.db_arango({
+            "query": "FOR user IN users RETURN user"
+            })
         
         # Check if users are fetched successfully
         if users and "result" in users:
@@ -1016,7 +1011,10 @@ def _():
 def _(user_id):
     try:
         # Fetch the user from the database
-        user = x.db_arango({"query": "FOR user IN users FILTER user.user_id == @user_id RETURN user", "bindVars": {"user_id": int(user_id)}})
+        user = x.db_arango({
+            "query": "FOR user IN users FILTER user.user_id == @user_id RETURN user", 
+            "bindVars": {"user_id": int(user_id)}
+            })
         
         # Check if user is fetched successfully
         if user and "result" in user and user["result"]:
@@ -1052,7 +1050,10 @@ def _():
         }
         
         # Insert user document into ArangoDB
-        res = x.db_arango({"query": "INSERT @doc IN users RETURN NEW", "bindVars": {"doc": user}})
+        res = x.db_arango({
+            "query": "INSERT @doc IN users RETURN NEW", 
+            "bindVars": {"doc": user}
+            })
         if res and "result" in res:
             new_user = res["result"][0]
             print("New User Added:", new_user)
