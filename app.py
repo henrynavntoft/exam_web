@@ -747,7 +747,7 @@ def _():
 
 
 
-############################## EDIT ITEM TODO: TEST IN POSTMAN
+############################## EDIT ITEM 
 @put("/edit_item")
 def _():
     try:
@@ -760,31 +760,31 @@ def _():
 
         x.validate_user_has_rights_to_item(user, item_pk)
 
-        new_images = x.validate_item_images()  
-
         db = x.db()
 
         # Update item details
-        db.execute(""" UPDATE items
+        db.execute("""UPDATE items
         SET item_name = ?, item_description = ?, item_price_per_night = ?, item_updated_at = ?
-        WHERE item_pk = ?
-        """, (item_name, item_description, item_price_per_night, item_updated_at, item_pk))
+        WHERE item_pk = ?""",
+        (item_name, item_description, item_price_per_night, item_updated_at, item_pk))
         
         db.commit()
 
         # Fetch existing images from the database
         old_images = db.execute("SELECT image_url FROM item_images WHERE item_fk = ?", (item_pk,)).fetchall()
+        old_image_count = len(old_images)
         print("Old images:", old_images)
-       
 
+        # Determine if new images can be added based on the current number of images
+        new_images = x.validate_item_images_no_image_ok()
 
-        # Process new images if provided
-        if new_images:
-            total_images = len(old_images) + len(new_images)
+        # Validate the total number of images
+        if new_images != "no-image":
+            total_images = old_image_count + len(new_images)
             if total_images > 5:
                 raise x.BadRequest("Total number of images exceeds the maximum allowed 5")
             elif total_images < 1:
-                raise x.BadRequest("There must be at least 1 images for the item.")
+                raise x.BadRequest("There must be at least 1 image for the item.")
 
             # Process each new image, rename it, save it, and store the filename in the database
             for image in new_images:

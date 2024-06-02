@@ -328,7 +328,10 @@ def validate_item_images():
             raise BadRequest("Image file name is empty")
         
         # Check the image extension
-        if pathlib.Path(image.filename).suffix.lower() not in allowed_extensions:
+        extension = pathlib.Path(image.filename).suffix.lower()
+        if extension == "":
+            raise BadRequest("No images provided")
+        if extension not in allowed_extensions:
             raise BadRequest("Invalid image extension")
 
         # Read the file into memory and check its size
@@ -340,6 +343,39 @@ def validate_item_images():
         image.file.seek(0)
 
     return item_images
+
+############################## 
+def validate_item_images_no_image_ok():
+    item_images = request.files.getall("item_images")
+    print("Item images:", item_images)
+
+    # Ensure that the number of images is within the allowed range when combined with existing images
+    if len(item_images) == 0:
+        return []
+
+    allowed_extensions = {'.png', '.jpg', '.jpeg', '.webp'}
+    for image in item_images:
+        # Check if the filename is empty
+        if not image.filename:
+            return "no-image"
+
+        # Check the image extension
+        extension = pathlib.Path(image.filename).suffix.lower()
+        if extension == "":
+            return "no-image"
+        if extension not in allowed_extensions:
+            raise BadRequest("Invalid image extension")
+
+        # Read the file into memory and check its size
+        file_in_memory = BytesIO(image.file.read())
+        if len(file_in_memory.getvalue()) > ITEM_IMAGE_MAX_SIZE:
+            raise BadRequest("Image size exceeds the maximum allowed size of 5MB")
+
+        # Go back to the start of the file for further operations
+        image.file.seek(0)
+
+    return item_images
+
 
 
 ########################################################################################### EMAILS

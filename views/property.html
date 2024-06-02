@@ -21,10 +21,10 @@
         </form>
         % end
     </div>
-    <div class="grid grid-cols-3 gap-2">
+    <div class="grid grid-cols-2 gap-2">
         % for image_url in item['item_images']:
         <img alt="" src="/images/{{image_url}}" alt="{{item['item_name']}}"
-            class="w-full h-56 object-cover rounded-lg mb-2">
+            class="w-full h-[500px] object-cover rounded-lg mb-2">
         % end
     </div>
 

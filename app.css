@@ -711,8 +711,8 @@ video {
   height: 12rem;
 }
 
-.h-56 {
-  height: 14rem;
+.h-\[500px\] {
+  height: 500px;
 }
 
 .h-\[50vh\] {
@@ -763,20 +763,16 @@ video {
   grid-template-columns: repeat(1, minmax(0, 1fr));
 }
 
+.grid-cols-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
 .grid-cols-\[1fr_1fr\] {
   grid-template-columns: 1fr 1fr;
 }
 
 .grid-cols-\[1fr_20fr_5fr\] {
   grid-template-columns: 1fr 20fr 5fr;
-}
-
-.grid-cols-2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.grid-cols-3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
 }
 
 .flex-col {
