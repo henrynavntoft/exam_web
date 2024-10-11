@@ -13,8 +13,8 @@ services:
   arangodb:
     image: arangodb:3.11.3
     container_name: database_container
-    # ports:
-    #   - 8529:8529
+    ports:
+       - 8529:8529
     environment:
       - ARANGO_NO_AUTH=1
     volumes:
@@ -29,4 +29,4 @@ services:
       - ./nginx:/etc/nginx/conf.d
     depends_on:
       - python
-  
+
