@@ -24,7 +24,7 @@ services:
     image: nginx:latest
     container_name: reverse_proxy_container
     ports:
-      - 8080:80
+      - 4000:80
     volumes:
       - ./nginx:/etc/nginx/conf.d
     depends_on:
