@@ -6,19 +6,27 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: bottlesite_container
-    ports:
-      - 80:80
+    container_name: application_container
     volumes:
       - ./:/app
 
   arangodb:
     image: arangodb:3.11.3
-    container_name: bottlesite_arango_3.11.3_container
-    # restart: always
-    ports:
-      - 8529:8529
+    container_name: database_container
+    # ports:
+    #   - 8529:8529
     environment:
       - ARANGO_NO_AUTH=1
     volumes:
       - ./arangodb:/var/lib/arangodb3
+
+  nginx:
+    image: nginx:latest
+    container_name: reverse_proxy_container
+    ports:
+      - 8080:80
+    volumes:
+      - ./nginx:/etc/nginx/conf.d
+    depends_on:
+      - python
+  
