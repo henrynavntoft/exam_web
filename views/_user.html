@@ -3,9 +3,18 @@
         <div>
             <p class="text-xl">{{user["user_first_name"]}} {{user["user_last_name"]}}</p>
         </div>
+        % if user['user_role'] == 'partner':
         <div>
-            <p>User role: {{user["user_role"]}}</p>
+            <p>
+                <p>User role: {{user["user_role"]}} ❤️ </p>
+            </p>
         </div>
+        % end
+        % if user['user_role'] == 'customer':
+        <div>
+            <p>User role: {{user["user_role"]}} </p>
+        </div>
+        % end
         <div>
             <p>User email: {{user["user_email"]}}</p>
         </div>
